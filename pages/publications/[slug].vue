@@ -258,6 +258,13 @@
           </NuxtLink>
         </div>
       </div>
+
+      <!-- Social Sharing Buttons -->
+      <SocialShareButtons 
+        v-if="publication"
+        :content="publication" 
+        contentType="publication" 
+      />
     </div>
 
     <!-- Loading State -->

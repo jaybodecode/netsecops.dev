@@ -86,28 +86,6 @@ const printArticle = () => {
   window.print()
 }
 
-// Social sharing functions
-const shareOnTwitter = () => {
-  if (!article.value) return
-  // Use twitter_post field which is pre-optimized with emojis, hashtags, and character limits
-  const text = encodeURIComponent(article.value.twitter_post || article.value.headline || '')
-  const url = encodeURIComponent(window.location.href)
-  // Don't add hashtags if twitter_post already has them
-  const hasHashtags = article.value.twitter_post?.includes('#')
-  const tweetUrl = hasHashtags 
-    ? `https://twitter.com/intent/tweet?text=${text}&url=${url}`
-    : `https://twitter.com/intent/tweet?text=${text}&url=${url}&hashtags=cybersecurity,infosec`
-  window.open(tweetUrl, '_blank', 'width=550,height=420')
-}
-
-const shareOnLinkedIn = () => {
-  if (!article.value) return
-  const url = encodeURIComponent(window.location.href)
-  // LinkedIn's sharing API will automatically pull OG tags for preview
-  // The headline, meta_description, and banner.png will be displayed
-  window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}`, '_blank', 'width=550,height=420')
-}
-
 // Utility functions
 const formatDate = (dateString: string | undefined) => {
   if (!dateString) return 'N/A';
@@ -1224,47 +1202,11 @@ definePageMeta({
         </div>
 
         <!-- Social Sharing Buttons -->
-        <div class="border-t-2 border-gray-800 pt-8 mt-12 mb-8">
-          <div class="relative">
-            <!-- Animated glow effect -->
-            <div class="absolute inset-0 bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-purple-500/20 blur-xl animate-pulse" />
-            
-            <div class="relative bg-gray-900 border-2 border-purple-500/30 rounded-lg p-6 shadow-[0_0_20px_rgba(168,85,247,0.2)]">
-              <h3 class="text-xl font-bold mb-2 text-center">
-                <span class="inline-block animate-bounce text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400">
-                  📢 Share This Article
-                </span>
-              </h3>
-              <p class="text-sm text-gray-400 text-center mb-4">Help others stay informed about cybersecurity threats</p>
-              
-              <div class="flex justify-center gap-4">
-                <!-- Share on X (Twitter) -->
-                <CyberButton
-                  variant="secondary"
-                  size="md"
-                  @click="shareOnTwitter"
-                  class="flex items-center gap-2 animate-pulse hover:animate-none"
-                >
-                  <Icon name="simple-icons:x" class="w-5 h-5" />
-                  Share on X
-                </CyberButton>
-                
-                <!-- Share on LinkedIn - COMMENTED OUT (not enabled yet) -->
-                <!--
-                <CyberButton
-                  variant="primary"
-                  size="md"
-                  @click="shareOnLinkedIn"
-                  class="flex items-center gap-2 animate-pulse hover:animate-none"
-                >
-                  <Icon name="simple-icons:linkedin" class="w-5 h-5" />
-                  Share on LinkedIn
-                </CyberButton>
-                -->
-              </div>
-            </div>
-          </div>
-        </div>
+        <SocialShareButtons 
+          v-if="article"
+          :content="article" 
+          contentType="article" 
+        />
 
         <!-- Article Navigation (Previous/Next) -->
         <div v-if="previousArticle || nextArticle" class="border-t-2 border-gray-800 pt-8 mt-8 mb-8">
