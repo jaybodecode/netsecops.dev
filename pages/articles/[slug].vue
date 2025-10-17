@@ -302,8 +302,8 @@ definePageMeta({
           severityGradient
         ]"
       >
-        <!-- Animated Grid Background -->
-        <div class="absolute inset-0 opacity-10" style="background-image: linear-gradient(rgba(34, 211, 238, 0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(34, 211, 238, 0.5) 1px, transparent 1px); background-size: 50px 50px; animation: gridMove 20s linear infinite;"/>
+        <!-- Static Grid Background -->
+        <div class="absolute inset-0 opacity-10" style="background-image: linear-gradient(rgba(34, 211, 238, 0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(34, 211, 238, 0.5) 1px, transparent 1px); background-size: 50px 50px;"/>
         
         <!-- Glitch Overlay Effect -->
         <div class="absolute inset-0 bg-gradient-to-br from-transparent via-cyan-500/5 to-purple-500/5 animate-pulse"/>
@@ -1386,13 +1386,14 @@ definePageMeta({
   @apply border-gray-800 my-6;
 }
 
-/* Animated grid background */
-@keyframes gridMove {
-  0% {
-    background-position: 0 0;
-  }
-  100% {
-    background-position: 50px 50px;
+/* ============================================
+   ACCESSIBILITY - Reduce Motion
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse,
+  .animate-bounce,
+  .animate-spin {
+    animation: none !important;
   }
 }
 

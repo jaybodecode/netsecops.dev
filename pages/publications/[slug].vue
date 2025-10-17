@@ -3,7 +3,11 @@
     <!-- Publication Hero -->
     <div v-if="publication" class="relative overflow-hidden bg-gradient-to-br from-cyan-950 via-purple-950 to-gray-950">
       <!-- Animated Grid Background -->
-      <div class="absolute inset-0 opacity-10" style="background-image: linear-gradient(rgba(34, 211, 238, 0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(34, 211, 238, 0.5) 1px, transparent 1px); background-size: 50px 50px; animation: gridMove 20s linear infinite;"/>
+      <div 
+        ref="gridBackground"
+        class="absolute inset-0 opacity-10 grid-background" 
+        style="background-image: linear-gradient(rgba(34, 211, 238, 0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(34, 211, 238, 0.5) 1px, transparent 1px); background-size: 50px 50px;"
+      />
       
       <!-- Navigation Buttons -->
       <div class="sticky top-0 z-50 bg-gray-950/80 backdrop-blur-md border-b-2 border-cyan-500/30">
@@ -552,14 +556,5 @@ definePageMeta({
 
 .cyber-prose-small :deep(strong) {
   @apply text-cyan-400 font-semibold;
-}
-
-@keyframes gridMove {
-  0% {
-    background-position: 0 0;
-  }
-  100% {
-    background-position: 50px 50px;
-  }
 }
 </style>
