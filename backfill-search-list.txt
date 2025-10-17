@@ -1,0 +1,32 @@
+# Backfill Commands - Search News (Oct 7 - Oct 16, 2025)
+# Copy and paste these one at a time, or use backfill-search-commands.sh
+
+# October 7, 2025 (9 days ago)
+npx tsx scripts/content-generation-v2/search-news.ts --timeframe=9daysago -c 10 --logtodb
+
+# October 8, 2025 (8 days ago)
+npx tsx scripts/content-generation-v2/search-news.ts --timeframe=8daysago -c 10 --logtodb
+
+# October 9, 2025 (7 days ago)
+npx tsx scripts/content-generation-v2/search-news.ts --timeframe=7daysago -c 10 --logtodb
+
+# October 10, 2025 (6 days ago)
+npx tsx scripts/content-generation-v2/search-news.ts --timeframe=6daysago -c 10 --logtodb
+
+# October 11, 2025 (5 days ago)
+npx tsx scripts/content-generation-v2/search-news.ts --timeframe=5daysago -c 10 --logtodb
+
+# October 12, 2025 (4 days ago)
+npx tsx scripts/content-generation-v2/search-news.ts --timeframe=4daysago -c 10 --logtodb
+
+# October 13, 2025 (3 days ago)
+npx tsx scripts/content-generation-v2/search-news.ts --timeframe=3daysago -c 10 --logtodb
+
+# October 14, 2025 (2 days ago)
+npx tsx scripts/content-generation-v2/search-news.ts --timeframe=2daysago -c 10 --logtodb
+
+# October 15, 2025 (yesterday)
+npx tsx scripts/content-generation-v2/search-news.ts --timeframe=yesterday -c 10 --logtodb
+
+# October 16, 2025 (today)
+npx tsx scripts/content-generation-v2/search-news.ts --timeframe=today -c 10 --logtodb

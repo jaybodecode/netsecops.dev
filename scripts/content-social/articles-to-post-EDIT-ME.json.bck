@@ -1,0 +1,216 @@
+{
+  "instructions": "Edit the twitter_post field for each article. Target: 228 chars max, 2-3 hashtags that DON'T repeat words in the tweet. Save this file when done.",
+  "posting_plan": "Test first article, then post rest with 10 second delays",
+  "articles": [
+    {
+      "slug": "linkpro-linux-rootkit-uses-ebpf-to-hide-from-security-tools",
+      "headline": "New 'LinkPro' Linux Rootkit Uses eBPF for Stealth and Remote Activation",
+      "isUpdate": false,
+      "prefix": "🚨 BREAKING:",
+      "char_count": 182,
+      "status": "✅ OPTIMIZED",
+      "twitter_post": "Stealthy new Linux rootkit 'LinkPro' discovered! 🐧 Uses eBPF to hide itself, activated by network \"magic packet.\" 🪄 Kernel-level evasion tech. #LinkPro #eBPF #Rootkit",
+      "suggestions": "Removed redundant words, kept specific searchable hashtags"
+    },
+    {
+      "slug": "two-cvss-10-critical-flaws-red-lion-industrial-rtus",
+      "headline": "Two CVSS 10.0 Flaws in Red Lion RTUs Allow Full Industrial Control",
+      "isUpdate": false,
+      "prefix": "🚨 BREAKING:",
+      "char_count": 177,
+      "status": "✅ OPTIMIZED",
+      "twitter_post": "CVSS 10.0 vulns in Red Lion industrial RTUs allow unauthenticated RCE with root access. Full control of critical infrastructure possible. Patch now! 🏭 #RedLion #CVSS10 #ICS",
+      "suggestions": "Condensed for impact, removed generic tags, kept searchable company/severity"
+    },
+    {
+      "slug": "qilin-ransomware-gang-claims-new-attacks-us-france-africa",
+      "headline": "Qilin Ransomware Gang Claims Flurry of Attacks on Global Organizations",
+      "isUpdate": false,
+      "prefix": "🚨 BREAKING:",
+      "char_count": 189,
+      "status": "✅ OPTIMIZED",
+      "twitter_post": "🔥 Qilin ransomware rampage! New victims across US, France & Africa. Insurance, healthcare & government sectors hit. Leak site growing daily. #Qilin #Healthcare #DoubleExtortion",
+      "suggestions": "Front-loaded impact, removed redundant 'ransomware' hashtag, added specific terms"
+    },
+    {
+      "slug": "cisa-warns-ransomware-exploiting-rapid7-velociraptor-flaw-cve-2025-6264",
+      "headline": "Ransomware Groups Exploiting Flaw in Rapid7's Velociraptor Tool, CISA Warns",
+      "isUpdate": false,
+      "prefix": "🚨 BREAKING:",
+      "char_count": 197,
+      "status": "✅ OPTIMIZED",
+      "twitter_post": "⚠️ CISA KEV ALERT: Ransomware gangs actively exploiting CVE-2025-6264 in Rapid7 Velociraptor forensics tool. Living-off-the-land attack. Check configs & patch now! #CVE20256264 #Rapid7 #LOTL",
+      "suggestions": "Added CVE hashtag, removed redundant terms, kept specific searchable identifiers"
+    },
+    {
+      "slug": "ncsc-annual-review-2025-record-nationally-significant-cyberattacks",
+      "headline": "UK's NCSC Reports Record 204 \"Nationally Significant\" Cyberattacks in Past Year",
+      "isUpdate": false,
+      "prefix": "🚨 BREAKING:",
+      "char_count": 185,
+      "status": "✅ OPTIMIZED",
+      "twitter_post": "📈 UK cyberattacks skyrocket! @NCSC 2025 Review: record 204 \"nationally significant\" incidents, 2x last year. Ransomware, China & North Korea top threats. 🇬🇧 #China #NorthKorea #UK",
+      "suggestions": "Removed redundant hashtags, added geopolitical threat actors for searchability"
+    },
+    {
+      "slug": "vietnam-airlines-qantas-data-breach-millions-customers-affected",
+      "headline": "Over 13 Million Airline Customers' Data Leaked in Breach of Third-Party Provider",
+      "isUpdate": false,
+      "prefix": "🚨 BREAKING:",
+      "char_count": 193,
+      "status": "✅ OPTIMIZED",
+      "twitter_post": "✈️ MAJOR DATA BREACH: 13M+ Vietnam Airlines & Qantas customers affected. \"Scattered LAPSUS$ Hunters\" breached 3rd-party provider. Names, emails, DOBs leaked. #VietnamAirlines #Qantas #LAPSUS",
+      "suggestions": "Kept airline names as hashtags, added threat actor group, removed generic terms"
+    },
+    {
+      "slug": "chinese-apt-jewelbug-breaches-russian-it-firm-supply-chain-attack",
+      "headline": "Chinese APT 'Jewelbug' Targets Russian IT Firm in Suspected Supply Chain Attack",
+      "isUpdate": false,
+      "prefix": "🚨 BREAKING:",
+      "char_count": 181,
+      "status": "✅ OPTIMIZED",
+      "twitter_post": "Geopolitical intrigue! 🇨🇳➡️🇷🇺 Chinese APT Jewelbug breached Russian IT firm, 5-month campaign. Supply chain attack suspected, data exfiltrated via Yandex Cloud. #Jewelbug #SupplyChain #Yandex",
+      "suggestions": "Front-loaded geopolitical angle, added specific cloud provider, removed generic tags"
+    },
+    {
+      "slug": "microsoft-disrupts-rhysida-ransomware-revokes-signing-certificates",
+      "headline": "Microsoft Revokes 200+ Certificates to Cripple Rhysida Ransomware Campaign",
+      "isUpdate": false,
+      "prefix": "🚨 BREAKING:",
+      "char_count": 190,
+      "status": "✅ OPTIMIZED",
+      "twitter_post": "✅ Microsoft strikes back! 200+ code-signing certs revoked from Rhysida (Vanilla Tempest). Fake MS Teams installers targeting healthcare & education blocked. 🛡️ #Rhysida #VanillaTempest #MSTeams",
+      "suggestions": "Added threat actor alias, removed redundant tags, kept specific searchable terms"
+    },
+    {
+      "slug": "microsoft-october-2025-patch-tuesday-fixes-four-zero-days",
+      "headline": "Patch Now: Microsoft Fixes 170+ Flaws, Including Four Actively Exploited Zero-Days",
+      "isUpdate": false,
+      "prefix": "🚨 BREAKING:",
+      "char_count": 173,
+      "status": "✅ OPTIMIZED",
+      "twitter_post": "📢 CRITICAL PATCH TUESDAY: Microsoft fixes 170+ flaws including 4 zero-days exploited in wild! Privilege escalation & Secure Boot bypass. Patch NOW! 💥 #Windows #SecureBoot #PatchTuesday",
+      "suggestions": "Condensed for urgency, kept specific technical terms, removed generic tags"
+    },
+    {
+      "slug": "cisa-emergency-directive-f5-source-code-theft-nation-state-actor",
+      "headline": "Nation-State Actor Steals F5 Source Code, Triggering CISA Emergency Directive",
+      "isUpdate": false,
+      "prefix": "🚨 BREAKING:",
+      "char_count": 172,
+      "status": "✅ OPTIMIZED",
+      "twitter_post": "🚨 CISA EMERGENCY DIRECTIVE 🚨 Nation-state actors stole F5 BIG-IP source code. ED 26-01 issued: federal agencies must patch immediately. Imminent threat. #BIGIP #ED2601 #F5",
+      "suggestions": "Added directive number for searchability, condensed urgency, kept specific identifiers"
+    },
+    {
+      "slug": "microsoft-removes-legacy-driver-to-fix-actively-exploited-zero-day",
+      "headline": "Microsoft Removes Legacy Driver from Windows to Kill Actively Exploited Zero-Day",
+      "isUpdate": false,
+      "prefix": "🚨 BREAKING:",
+      "char_count": 178,
+      "status": "✅ OPTIMIZED",
+      "twitter_post": "Microsoft KILLS zero-day by removing Agere Modem driver entirely. CVE-2025-24990 exploited for SYSTEM escalation on all Windows versions. Patch Tuesday removes it. #CVE202524990 #AgereModem",
+      "suggestions": "Added CVE hashtag, condensed for impact, kept specific driver name"
+    },
+    {
+      "slug": "canadian-tire-discloses-e-commerce-customer-data-breach",
+      "headline": "Canadian Tire Discloses Data Breach Affecting E-Commerce Customers",
+      "isUpdate": false,
+      "prefix": "🚨 BREAKING:",
+      "char_count": 170,
+      "status": "✅ OPTIMIZED",
+      "twitter_post": "Canadian Tire breach affects e-commerce customers including SportChek & Mark's. Names, emails, addresses & encrypted passwords exposed. 🛒 #CanadianTire #SportChek #Canada",
+      "suggestions": "Kept brand names as hashtags, removed generic terms, focused on affected parties"
+    },
+    {
+      "slug": "chinese-apt-jewelbug-breaches-russian-it-firm-in-supply-chain-threat",
+      "headline": "Chinese APT \"Jewelbug\" Breaches Russian IT Firm, Sparking Supply Chain Fears",
+      "isUpdate": false,
+      "prefix": "🚨 BREAKING:",
+      "char_count": 0,
+      "status": "⏭️ SKIPPED - DUPLICATE",
+      "twitter_post": "SKIP THIS - Duplicate of earlier Jewelbug article",
+      "suggestions": "This is a duplicate slug variation - skip posting"
+    },
+    {
+      "slug": "whisper-2fa-phishing-as-a-service-platform-bypasses-mfa-at-scale",
+      "headline": "New \"Whisper 2FA\" Phishing Kit Bypasses MFA in Nearly 1 Million Attacks",
+      "isUpdate": false,
+      "prefix": "🚨 BREAKING:",
+      "char_count": 188,
+      "status": "✅ OPTIMIZED",
+      "twitter_post": "PhaaS kit \"Whisper 2FA\" used in ~1M attacks since July. Real-time AJAX loop steals credentials & MFA tokens repeatedly until successful. Targets Microsoft 365. 🚫 #Whisper2FA #PhaaS #Microsoft365",
+      "suggestions": "Added specific kit name as hashtag, kept searchable platform, removed generic terms"
+    },
+    {
+      "slug": "beamglea-npm-supply-chain-phishing-campaign-hits-135-companies",
+      "headline": "NPM Registry Abused as Phishing Infrastructure in \"Beamglea\" Campaign",
+      "isUpdate": false,
+      "prefix": "🚨 BREAKING:",
+      "char_count": 179,
+      "status": "✅ OPTIMIZED",
+      "twitter_post": "⚠️ Novel attack: \"Beamglea\" campaign abuses NPM registry & unpkg CDN as trusted infrastructure for credential theft. 175+ malicious packages target 135+ companies. #Beamglea #NPM #unpkg",
+      "suggestions": "Added campaign and CDN names as specific searchable terms, removed generic tags"
+    },
+    {
+      "slug": "blacksuit-ransomware-deployed-after-vishing-attack-on-manufacturer",
+      "headline": "Vishing Call Leads to BlackSuit Ransomware Attack on Global Manufacturer",
+      "isUpdate": false,
+      "prefix": "🚨 BREAKING:",
+      "char_count": 183,
+      "status": "✅ OPTIMIZED",
+      "twitter_post": "📞 Vishing call → BlackSuit ransomware devastation. Employee tricked for VPN access, 400GB stolen, hundreds of VMs encrypted. Social engineering's deadly power. #BlackSuit #Vishing #Manufacturing",
+      "suggestions": "Kept specific ransomware and attack vector, added industry, removed generic terms"
+    },
+    {
+      "slug": "chinese-apt-flax-typhoon-abuses-arcgis-for-year-long-espionage-campaign",
+      "headline": "Chinese APT Flax Typhoon Weaponizes ArcGIS Software for Year-Long Espionage",
+      "isUpdate": false,
+      "prefix": "🚨 BREAKING:",
+      "char_count": 179,
+      "status": "✅ OPTIMIZED",
+      "twitter_post": "🇨🇳 Chinese APT Flax Typhoon hid inside Esri ArcGIS for 1+ year, using legitimate feature as persistent web shell for espionage. Vendor forced to update security docs. #FlaxTyphoon #ArcGIS #Esri",
+      "suggestions": "Added software vendor name, kept specific APT name, removed redundant geographic terms"
+    },
+    {
+      "slug": "microsoft-patches-actively-exploited-windows-rasman-zero-day",
+      "headline": "Actively Exploited Windows RasMan Zero-Day Lets Attackers Gain SYSTEM Control",
+      "isUpdate": false,
+      "prefix": "🚨 BREAKING:",
+      "char_count": 167,
+      "status": "✅ OPTIMIZED",
+      "twitter_post": "⚠️ URGENT: Microsoft patches Windows RasMan zero-day CVE-2025-59230 exploited in wild. SYSTEM privileges gained. CISA KEV added. Patch now! #CVE202559230 #RasMan #Windows",
+      "suggestions": "Added CVE and service name as specific searchable terms, condensed urgency"
+    },
+    {
+      "slug": "oracle-patches-critical-e-business-suite-zero-days-exploited-by-clop-ransomware",
+      "headline": "Oracle Scrambles to Patch Critical Zero-Day Exploited by Cl0p Ransomware",
+      "isUpdate": false,
+      "prefix": "🚨 BREAKING:",
+      "char_count": 173,
+      "status": "✅ OPTIMIZED",
+      "twitter_post": "📢 EMERGENCY: Oracle out-of-band patch for critical EBS zero-days. CVE-2025-61882 (CVSS 9.8) actively exploited by Cl0p for data theft. Update NOW! #Oracle #CVE202561882 #Cl0p",
+      "suggestions": "Added CVE and threat actor as specific searchable terms, condensed urgency"
+    },
+    {
+      "slug": "f5-breach-exposes-big-ip-source-code-cisa-issues-emergency-directive",
+      "headline": "F5 Source Code Stolen by Nation-State; CISA Mandates Urgent Action",
+      "isUpdate": true,
+      "prefix": "📢 UPDATE:",
+      "char_count": 162,
+      "status": "✅ OPTIMIZED - UPDATE!",
+      "twitter_post": "🚨 Nation-state actors breached F5, stealing BIG-IP source code & zero-day details. CISA Emergency Directive 26-01: federal agencies must patch immediately. #BIGIP #ED2601 #F5",
+      "suggestions": "This is an UPDATE! Added directive number, kept product name, removed generic tags"
+    },
+    {
+      "slug": "critical-connectwise-screenconnect-vulnerability-exploited-for-ransomware",
+      "headline": "Patch Now: Critical ConnectWise Flaw Actively Exploited to Deploy Ransomware",
+      "isUpdate": false,
+      "prefix": "🚨 BREAKING:",
+      "char_count": 189,
+      "status": "✅ OPTIMIZED",
+      "twitter_post": "🚨 URGENT: ConnectWise ScreenConnect CVE-2025-1709 actively exploited for LockBit ransomware! CVSS 10.0 auth bypass = full server takeover. CISA KEV added. Update to v23.9.8 NOW! #CVE20251709 #LockBit",
+      "suggestions": "Added CVE and specific ransomware variant as searchable terms, kept severity"
+    }
+  ]
+}

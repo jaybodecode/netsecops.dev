@@ -1,0 +1,41 @@
+# Nuxt dev/build outputs
+.output
+.data
+.nuxt
+.nitro
+.cache
+dist
+
+# Node dependencies
+node_modules
+
+# Logs
+logs
+*.log
+
+# Temporary files and caches
+tmp/
+.backups/
+
+# Generated RSS feeds (generated at build time)
+public/rss/
+rss.xml
+
+# Generated data files
+public/data/
+
+# Playwright browser testing artifacts
+.playwright-mcp/
+
+# Misc
+.DS_Store
+.fleet
+.idea
+
+# Local env files
+.env
+.env.*
+!.env.example
+
+# Sensitive files
+brands.txt

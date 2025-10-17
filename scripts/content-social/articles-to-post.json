@@ -1,0 +1,92 @@
+[
+  {
+    "slug": "linkpro-linux-rootkit-uses-ebpf-to-hide-from-security-tools",
+    "headline": "New 'LinkPro' Linux Rootkit Uses eBPF for Stealth and Remote Activation",
+    "twitter_post": "Stealthy new Linux rootkit 'LinkPro' discovered! 🐧 It uses eBPF to hide itself and is activated by a network \"magic packet.\" 🪄 Attackers are abusing kernel-level tech to evade detection. #Linux #Malware #Rootkit #eBPF #CyberSecurity",
+    "current_length": 232,
+    "target_length": 243,
+    "needs_edit": false,
+    "notes": "✅ Good! 232 chars, has emojis (🐧🪄), but has 5 hashtags - reduce to 2-3"
+  },
+  {
+    "slug": "two-cvss-10-critical-flaws-red-lion-industrial-rtus",
+    "headline": "Two CVSS 10.0 Flaws in Red Lion RTUs Allow Full Industrial Control",
+    "twitter_post": "🚨 CRITICAL ICS ALERT 🚨 Two CVSS 10.0 vulnerabilities found in Red Lion industrial RTUs. Chaining them allows unauthenticated RCE with root access. 🏭 This could give attackers full control of critical infrastructure. Patch now! #ICS #OTsecurity #Vulnerability #CyberSecurity",
+    "current_length": 273,
+    "target_length": 243,
+    "needs_edit": true,
+    "notes": "❌ 273 chars (30 over) + 4 hashtags - needs trimming"
+  },
+  {
+    "slug": "qilin-ransomware-gang-claims-new-attacks-us-france-africa",
+    "headline": "Qilin Ransomware Gang Claims Flurry of Attacks on Global Organizations",
+    "twitter_post": "🔥 Qilin ransomware is on a rampage! The group has claimed a string of new victims in the US, France, and Africa, hitting insurance, healthcare, and government sectors. Their leak site is growing daily. #Ransomware #Qilin #CyberAttack #ThreatIntel",
+    "current_length": 246,
+    "target_length": 243,
+    "needs_edit": true,
+    "notes": "⚠️ 246 chars (3 over) + 4 hashtags - minor trim needed"
+  },
+  {
+    "slug": "cisa-warns-ransomware-exploiting-rapid7-velociraptor-flaw-cve-2025-6264",
+    "headline": "Ransomware Groups Exploiting Flaw in Rapid7's Velociraptor Tool, CISA Warns",
+    "twitter_post": "⚠️ CISA KEV ALERT ⚠️ Ransomware gangs are actively exploiting a flaw (CVE-2025-6264) in Rapid7's Velociraptor forensics tool to take over endpoints. It's a living-off-the-land attack. Check your configs & patch now! #CyberSecurity #Ransomware #Vulnerability #CISA",
+    "current_length": 263,
+    "target_length": 243,
+    "needs_edit": true,
+    "notes": "❌ 263 chars (20 over) + 4 hashtags - needs trimming"
+  },
+  {
+    "slug": "ncsc-annual-review-2025-record-nationally-significant-cyberattacks",
+    "headline": "UK's NCSC Reports Record 204 \"Nationally Significant\" Cyberattacks in Past Year",
+    "twitter_post": "📈 UK cyberattacks skyrocket! The @NCSC's 2025 Annual Review reveals a record 204 \"nationally significant\" incidents, more than double last year. Ransomware, China & North Korea are top threats. 🇬🇧 #CyberSecurity #NCSC #ThreatIntel #Ransomware #UK",
+    "current_length": 246,
+    "target_length": 243,
+    "needs_edit": true,
+    "notes": "⚠️ 246 chars (3 over) + 5 hashtags - minor trim + reduce hashtags"
+  },
+  {
+    "slug": "vietnam-airlines-qantas-data-breach-millions-customers-affected",
+    "headline": "Over 13 Million Airline Customers' Data Leaked in Breach of Third-Party Provider",
+    "twitter_post": "✈️ MAJOR DATA BREACH ✈️ Over 13M customers of Vietnam Airlines & Qantas affected. Hacker group \"Scattered LAPSUS$ Hunters\" claims to have breached a 3rd-party provider. Names, emails, DOBs leaked. Change your passwords! #DataBreach #Aviation #CyberSecurity #Qantas",
+    "current_length": 264,
+    "target_length": 243,
+    "needs_edit": true,
+    "notes": "❌ 264 chars (21 over) + 4 hashtags - needs trimming"
+  },
+  {
+    "slug": "chinese-apt-jewelbug-breaches-russian-it-firm-supply-chain-attack",
+    "headline": "Chinese APT 'Jewelbug' Targets Russian IT Firm in Suspected Supply Chain Attack",
+    "twitter_post": "Geopolitical Intrigue! 🇨🇳➡️🇷🇺 Chinese APT 'Jewelbug' breached a Russian IT firm in a 5-month campaign. Researchers suspect a supply chain attack, with data exfiltrated to Yandex Cloud to evade detection. #CyberSecurity #APT #ThreatIntel #China #Russia",
+    "current_length": 251,
+    "target_length": 243,
+    "needs_edit": true,
+    "notes": "⚠️ 251 chars (8 over) + 5 hashtags - minor trim + reduce hashtags"
+  },
+  {
+    "slug": "microsoft-disrupts-rhysida-ransomware-revokes-signing-certificates",
+    "headline": "Microsoft Revokes 200+ Certificates to Cripple Rhysida Ransomware Campaign",
+    "twitter_post": "✅ Microsoft strikes back! Over 200 code-signing certs used by the Rhysida ransomware group (Vanilla Tempest) have been revoked. 🛡️ The group was signing fake MS Teams installers to target healthcare & education. #Ransomware #CyberSecurity #Microsoft #Rhysida",
+    "current_length": 258,
+    "target_length": 243,
+    "needs_edit": true,
+    "notes": "❌ 258 chars (15 over) + 4 hashtags - needs trimming"
+  },
+  {
+    "slug": "microsoft-october-2025-patch-tuesday-fixes-four-zero-days",
+    "headline": "Patch Now: Microsoft Fixes 170+ Flaws, Including Four Actively Exploited Zero-Days",
+    "twitter_post": "📢 CRITICAL PATCH TUESDAY 📢 Microsoft's October update fixes 170+ flaws, including 4 zero-days actively exploited in the wild! 💥 Windows Privilege Escalation & Secure Boot bypass bugs are being used by attackers now. Patch immediately! #PatchTuesday #ZeroDay #CyberSecurity",
+    "current_length": 272,
+    "target_length": 243,
+    "needs_edit": true,
+    "notes": "❌ 272 chars (29 over) + 3 hashtags - needs significant trimming"
+  },
+  {
+    "slug": "cisa-emergency-directive-f5-source-code-theft-nation-state-actor",
+    "headline": "Nation-State Actor Steals F5 Source Code, Triggering CISA Emergency Directive",
+    "twitter_post": "🚨 CISA EMERGENCY DIRECTIVE 🚨 Nation-state actor steals F5 source code, creating \"imminent risk.\" Federal agencies ordered to patch all BIG-IP devices immediately. This is a major supply chain threat. #CyberSecurity #SupplyChainAttack #F5 #CISA #Infosec",
+    "current_length": 252,
+    "target_length": 243,
+    "needs_edit": true,
+    "notes": "⚠️ 252 chars (9 over) + 5 hashtags - minor trim + reduce hashtags"
+  }
+]

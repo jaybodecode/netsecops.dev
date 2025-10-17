@@ -1,0 +1,369 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run Dev Server",
+      "type": "shell",
+      "command": "npm run dev",
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "nuxt-dev",
+        "fileLocation": "relative",
+        "pattern": [
+          {
+            "regexp": "^.*ERROR.*Pre-transform error.*Failed to load url\\s+([^\\s]+).*in\\s+([^\\s]+)\\..*$",
+            "file": 2,
+            "message": 1
+          },
+          {
+            "regexp": "^([^\\s].*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+            "file": 1,
+            "line": 2,
+            "column": 3,
+            "severity": 4,
+            "message": 5
+          }
+        ],
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^.*Nuxt.*$|^.*Starting development server.*$",
+          "endsPattern": "^.*Local:.*http://localhost:3000/.*$"
+        }
+      },
+      "presentation": {
+        "echo": false,
+        "reveal": "always",
+        "focus": false,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "runOptions": {
+        "instanceLimit": 1
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "Stop Dev Server",
+      "type": "shell",
+      "command": "lsof -ti:3000 | xargs kill -9 2>/dev/null || echo 'No dev server running on port 3000'",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false
+      }
+    },
+    {
+      "label": "Restart Dev Server",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "Stop Dev Server",
+        "Run Dev Server"
+      ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "dedicated",
+        "showReuseMessage": false
+      }
+    },
+    {
+      "label": "Build Production",
+      "type": "shell",
+      "command": "npm run build",
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": false
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "Generate Static Site",
+      "type": "shell",
+      "command": "npm run generate",
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": false
+      }
+    },
+    {
+      "label": "Preview Production Build",
+      "type": "shell",
+      "command": "npm run preview",
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": {
+          "regexp": "^.*$",
+          "file": 1,
+          "location": 2,
+          "message": 3
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^.*preview.*$",
+          "endsPattern": "^.*Local:.*$"
+        }
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "dedicated",
+        "showReuseMessage": false
+      }
+    },
+    {
+      "label": "TypeScript Check",
+      "type": "shell", 
+      "command": "npx nuxi typecheck",
+      "problemMatcher": "$tsc",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "TypeScript Watch",
+      "type": "shell",
+      "command": "npx nuxi typecheck --watch",
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "typescript",
+        "fileLocation": "relative",
+        "pattern": {
+          "regexp": "^([^\\s].*)\\((\\d+),(\\d+)\\):\\s+(error|warning|info)\\s+(TS\\d+):\\s+(.*)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "code": 5,
+          "message": 6
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^.*Starting.*$|^.*File change detected.*$|^.*Checking.*$",
+          "endsPattern": "^.*Found \\d+ error\\(s\\)\\. Watching for file changes\\.$|^.*Compilation complete\\. Watching for file changes\\.$|^.*No errors found\\. Watching for file changes\\.$"
+        }
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always", 
+        "focus": false,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": false
+      },
+      "options": {
+        "env": {
+          "FORCE_COLOR": "1",
+          "NODE_OPTIONS": "--max-old-space-size=4096"
+        }
+      },
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "ESLint Watch",
+      "type": "shell",
+      "command": "npx nodemon --watch . --ext vue,ts,js,mjs --delay 1000ms --exec 'clear && echo \"🔍 ESLint Check - $(date)\" && echo \"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\" && npx eslint . --fix'",
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "eslint-watch",
+        "fileLocation": "relative",
+        "pattern": {
+          "regexp": "^\\s*([^\\s].*):(\\d+):(\\d+):\\s+(error|warning)\\s+(.*)\\s+(.*)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "message": 5,
+          "code": 6
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^.*starting.*$|^.*restarting.*$",
+          "endsPattern": "^.*clean exit.*$|^.*waiting for changes.*$"
+        }
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "ESLint Clean Watch",
+      "type": "shell", 
+      "command": "npx nodemon --watch . --ext vue,ts,js,mjs --delay 1500ms --exec 'printf \"\\033c\" && echo \"🔍 ESLint Clean Check - $(date)\" && echo \"\" && (npx eslint . --fix --format stylish || echo \"✓ ESLint completed\") && echo \"\\n[Waiting for changes...]\"'",
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "eslint-clean",
+        "fileLocation": "relative",
+        "pattern": {
+          "regexp": "^\\s*([^\\s].*):(\\d+):(\\d+):\\s+(error|warning)\\s+(.*)\\s+(.*)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "message": 5,
+          "code": 6
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^.*starting.*$|^.*restarting.*$",
+          "endsPattern": "^.*\\[Waiting for changes\\.\\.\\.\\].*$"
+        }
+      },
+      "presentation": {
+        "echo": false,
+        "reveal": "always",
+        "focus": false,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "File Watch Monitor",
+      "type": "shell",
+      "command": "npx nodemon --watch . --ext vue,ts,js --exec 'clear && echo \"� Code Quality Check - $(date)\" && echo \"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\" && echo \"📝 TypeScript:\" && npx nuxi typecheck && echo \"\" && echo \"🔍 ESLint:\" && npx eslint . --max-warnings 0 | head -15'",
+      "isBackground": true,
+      "problemMatcher": [
+        {
+          "owner": "typescript-monitor",
+          "fileLocation": "relative",
+          "pattern": {
+            "regexp": "^([^\\s].*)\\((\\d+),(\\d+)\\):\\s+(error|warning|info)\\s+(TS\\d+):\\s+(.*)$",
+            "file": 1,
+            "line": 2,
+            "column": 3,
+            "severity": 4,
+            "code": 5,
+            "message": 6
+          }
+        },
+        {
+          "owner": "eslint-monitor",
+          "fileLocation": "relative",
+          "pattern": {
+            "regexp": "^\\s*([^\\s].*):(\\d+):(\\d+):\\s+(error|warning)\\s+(.*)\\s+(.*)$",
+            "file": 1,
+            "line": 2,
+            "column": 3,
+            "severity": 4,
+            "message": 5,
+            "code": 6
+          }
+        }
+      ],
+      "presentation": {
+        "echo": false,
+        "reveal": "always",
+        "focus": false,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": false
+      },
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "ESLint Check",
+      "type": "shell",
+      "command": "npx eslint .",
+      "problemMatcher": "$eslint-stylish",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared", 
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "Run All Checks",
+      "dependsOrder": "parallel",
+      "dependsOn": [
+        "TypeScript Check",
+        "ESLint Check"
+      ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false
+      },
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "Start All Watch Services",
+      "dependsOrder": "parallel",
+      "dependsOn": [
+        "TypeScript Watch",
+        "ESLint Clean Watch"
+      ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false
+      },
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      }
+    }
+  ]
+}

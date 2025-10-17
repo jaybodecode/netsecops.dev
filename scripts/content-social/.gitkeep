@@ -1,0 +1,45 @@
+# Social Media Content Directory
+
+This directory contains scripts for posting to social media platforms (Twitter/X, LinkedIn, Medium).
+
+## Quick Start
+
+See [TWITTER-IMPLEMENTATION-SUMMARY.md](./TWITTER-IMPLEMENTATION-SUMMARY.md) for complete Twitter setup.
+
+## Installation
+
+```bash
+npm install twitter-api-v2
+```
+
+## Usage
+
+```bash
+# Preview thread (no posting)
+npx tsx scripts/content-social/post-to-twitter.ts --dry-run
+
+# Post to Twitter
+npx tsx scripts/content-social/post-to-twitter.ts
+```
+
+## Documentation
+
+- **[README.md](./README.md)** - Overall strategy and architecture
+- **[TWITTER-X.md](./TWITTER-X.md)** - Twitter platform requirements
+- **[LINKEDIN.md](./LINKEDIN.md)** - LinkedIn platform requirements  
+- **[MEDIUM.md](./MEDIUM.md)** - Medium platform requirements
+- **[SETUP-TWITTER.md](./SETUP-TWITTER.md)** - Twitter setup guide
+- **[TWITTER-IMPLEMENTATION-SUMMARY.md](./TWITTER-IMPLEMENTATION-SUMMARY.md)** - Implementation summary ⭐
+
+## Files
+
+```
+lib/
+  db.ts           - Database query helpers
+  truncate.ts     - Text formatting utilities
+  formatters.ts   - Platform-specific formatters
+
+post-to-twitter.ts   - Twitter posting script ✅
+post-to-linkedin.ts  - LinkedIn posting (future)
+post-to-medium.ts    - Medium posting (future)
+```

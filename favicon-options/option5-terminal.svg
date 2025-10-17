@@ -1,0 +1,55 @@
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="termGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#39FF14;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#00FFA3;stop-opacity:1" />
+    </linearGradient>
+    <filter id="termGlow">
+      <feGaussianBlur stdDeviation="1.5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Dark terminal background -->
+  <rect width="32" height="32" fill="#0A0E0F" rx="3"/>
+  
+  <!-- Terminal window -->
+  <rect x="3" y="6" width="26" height="20" rx="2" fill="#0F1419" stroke="url(#termGrad)" stroke-width="1.5"/>
+  
+  <!-- Terminal header bar -->
+  <rect x="3" y="6" width="26" height="3" rx="2" fill="url(#termGrad)" fill-opacity="0.3"/>
+  
+  <!-- Terminal dots -->
+  <circle cx="5.5" cy="7.5" r="0.8" fill="#FF5555"/>
+  <circle cx="7.5" cy="7.5" r="0.8" fill="#FFB86C"/>
+  <circle cx="9.5" cy="7.5" r="0.8" fill="#39FF14"/>
+  
+  <!-- Command prompt -->
+  <text x="5" y="14" fill="#39FF14" font-size="4" font-family="monospace" font-weight="bold" filter="url(#termGlow)">$</text>
+  
+  <!-- Blinking cursor -->
+  <rect x="8" y="11" width="1.5" height="3.5" fill="#39FF14" filter="url(#termGlow)"/>
+  
+  <!-- Code lines -->
+  <line x1="5" y1="17.5" x2="14" y2="17.5" stroke="#00FFA3" stroke-width="1" opacity="0.7"/>
+  <line x1="5" y1="20" x2="18" y2="20" stroke="#00FFA3" stroke-width="1" opacity="0.5"/>
+  <line x1="5" y1="22.5" x2="11" y2="22.5" stroke="#00FFA3" stroke-width="1" opacity="0.4"/>
+  
+  <!-- Security badge overlay -->
+  <path d="M23 13 L20 14.5 L20 18 C20 19.5 21.5 21 23 21.5 C24.5 21 26 19.5 26 18 L26 14.5 Z" 
+        fill="url(#termGrad)" 
+        stroke="#0A0E0F" 
+        stroke-width="1"
+        filter="url(#termGlow)"/>
+  
+  <!-- Check mark in badge -->
+  <polyline points="21.5,17.5 22.5,18.5 24.5,16.5" 
+            fill="none" 
+            stroke="#0A0E0F" 
+            stroke-width="1" 
+            stroke-linecap="round" 
+            stroke-linejoin="round"/>
+</svg>

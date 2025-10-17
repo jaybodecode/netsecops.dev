@@ -1,0 +1,477 @@
+/**
+ * Content Generation V2 - Publication Generation
+ * 
+ * Step 6: Generate final publication from resolution decisions
+ * 
+ * Process:
+ * 1. Load resolutions by date from article_resolutions
+ * 2. Load publication candidate from structured_news
+ * 3. Check for SKIP decisions → regenerate publication metadata if needed
+ * 4. Create records in publications, published_articles, publication_articles, article_updates tables
+ * 5. For NEW: Query articles_meta by canonical_article_id
+ * 6. For UPDATE: Get ORIGINAL from articles_meta, get UPDATE content from structured_news candidate
+ * 
+ * Usage:
+ *   npx tsx scripts/content-generation-v2/generate-publication.ts --date 2025-10-09
+ *   npx tsx scripts/content-generation-v2/generate-publication.ts --date 2025-10-09 --force
+ * 
+ * Critical Rules:
+ * - UPDATE articles are NOT in articles_meta (only ORIGINAL)
+ * - Use canonical_article_id for all article lookups
+ * - Publication slugs are deterministic: {pub_type}_threat_publications_{date}
+ * - Article slugs from articles_meta (NEVER change)
+ * 
+ * LLM: Gemini 2.5 Flash for SKIP regeneration of headline/summary (temperature 0.7)
+ */
+
+import 'dotenv/config';
+import { Command } from 'commander';
+import { callVertex } from './ai/vertex.js';
+import { getStructuredNewsByDate } from './database/schema-structured-news.js';
+import { getResolutionsByDate, type ArticleResolution } from './database/schema-article-resolutions.js';
+import { getArticleMeta } from './database/schema-article-entities.js';
+import {
+  createPublication,
+  getPublicationByDate,
+  deletePublication,
+  type Publication
+} from './database/schema-publications.js';
+import {
+  createPublishedArticle,
+  getPublishedArticle,
+  linkArticleToPublication,
+  createArticleUpdate,
+  type PublishedArticle
+} from './database/schema-published-articles.js';
+import type { CyberAdvisoryType } from './news-structured-schema.js';
+
+interface CLIOptions {
+  date: string;
+  force: boolean;
+}
+
+/**
+ * Parse command line arguments
+ */
+function parseArgs(): CLIOptions {
+  const program = new Command();
+  
+  program
+    .name('generate-publication')
+    .description('Generate final publication from resolution decisions (Step 6)')
+    .requiredOption('--date <date>', 'Publication date (YYYY-MM-DD)')
+    .option('--force', 'Force re-generation (delete existing publication)')
+    .helpOption('-h, --help', 'Display help information')
+    .addHelpText('after', `
+Examples:
+  # Generate publication for specific date
+  npx tsx scripts/content-generation-v2/generate-publication.ts --date 2025-10-09
+  
+  # Force re-generation (delete and recreate)
+  npx tsx scripts/content-generation-v2/generate-publication.ts --date 2025-10-09 --force
+
+Database Tables Created:
+  - publications (normalized publication metadata)
+  - published_articles (normalized article content)
+  - publication_articles (many-to-many join table)
+  - article_updates (update history tracking)
+
+Key Concepts:
+  - NEW articles: Create new published_articles entry
+  - UPDATE articles: Add update record to existing article
+  - SKIP articles: Regenerate publication metadata without them
+  - canonical_article_id: Always use for lookups
+`)
+    .parse(process.argv);
+  
+  return {
+    date: program.opts().date,
+    force: program.opts().force ?? false
+  };
+}
+
+/**
+ * Regenerate publication metadata when articles are SKIPped
+ * Note: Slug is NOT regenerated - it's deterministic based on date and type
+ */
+async function regeneratePublicationMetadata(
+  originalCandidate: any,
+  remainingArticles: Array<{ slug: string; headline: string; summary: string }>
+): Promise<{ headline: string; summary: string }> {
+  console.log('   🤖 Calling Gemini 2.5 Flash to regenerate publication metadata...');
+  
+  const prompt = `You are a cybersecurity news editor regenerating publication metadata after removing duplicate articles.
+
+ORIGINAL PUBLICATION:
+Headline: ${originalCandidate.headline}
+Summary: ${originalCandidate.summary}
+
+REMAINING ARTICLES (${remainingArticles.length}):
+${remainingArticles.map((a, i) => `${i + 1}. ${a.headline}\n   ${a.summary}`).join('\n\n')}
+
+TASK:
+Generate a NEW headline and summary for this publication that:
+1. Accurately reflects the ${remainingArticles.length} remaining articles
+2. Highlights the most significant stories
+3. Maintains professional cybersecurity journalism standards
+
+IMPORTANT:
+- Don't mention removed articles
+- Focus on what's being published
+- Headline should be compelling but factual (50-100 chars)
+- Summary should be 2-3 sentences describing the overall threat landscape
+
+Return JSON with: headline, summary`;
+
+  const result = await callVertex(prompt, {
+    model: 'gemini-2.5-flash',
+    temperature: 0.7,
+    maxTokens: 1024,
+    schema: {
+      type: 'object',
+      properties: {
+        headline: { type: 'string' },
+        summary: { type: 'string' }
+      },
+      required: ['headline', 'summary']
+    }
+  });
+  
+  if (result.usage) {
+    console.log(`   📊 Tokens: ${result.usage.inputTokens.toLocaleString()} in, ${result.usage.outputTokens.toLocaleString()} out`);
+  }
+  
+  return result.content as { headline: string; summary: string };
+}
+
+/**
+ * Process NEW article - create new published_articles entry
+ */
+async function processNewArticle(
+  resolution: ArticleResolution,
+  publicationId: string,
+  position: number
+): Promise<void> {
+  // Get article metadata from articles_meta (indexed in Step 3)
+  const article = getArticleMeta(resolution.canonical_article_id!);
+  
+  if (!article) {
+    console.error(`   ❌ Article not found in articles_meta: ${resolution.canonical_article_id}`);
+    throw new Error(`Article ${resolution.canonical_article_id} not indexed`);
+  }
+  
+  console.log(`\n📄 NEW Article (${position}):`);
+  console.log(`   ID: ${article.article_id}`);
+  console.log(`   Slug: ${article.slug}`);
+  console.log(`   Headline: ${article.summary.substring(0, 60)}...`);
+  
+  // Create published article record
+  createPublishedArticle({
+    id: article.article_id,
+    publication_id: publicationId,
+    slug: article.slug,
+    headline: article.summary.split('.')[0] + '.',  // First sentence as headline
+    summary: article.summary,
+    full_report: article.full_report || article.summary,
+    position: position,
+    is_update: false,
+    original_pub_date: article.pub_date_only
+  });
+  
+  // Link article to publication
+  linkArticleToPublication({
+    publication_id: publicationId,
+    article_id: article.article_id,
+    position: position,
+    is_primary: true  // This is the original publication
+  });
+  
+  console.log(`   ✅ Created published_articles entry`);
+}
+
+/**
+ * Process UPDATE article - add update record to existing article
+ */
+async function processUpdateArticle(
+  resolution: ArticleResolution,
+  publicationId: string,
+  candidateData: CyberAdvisoryType,
+  position: number
+): Promise<void> {
+  // Get ORIGINAL article from articles_meta (using canonical_article_id)
+  const originalArticle = getArticleMeta(resolution.canonical_article_id!);
+  
+  if (!originalArticle) {
+    console.error(`   ❌ Original article not found: ${resolution.canonical_article_id}`);
+    throw new Error(`Original article ${resolution.canonical_article_id} not indexed`);
+  }
+  
+  // Get NEW article content from candidate (NOT in articles_meta!)
+  const newArticleData = candidateData.articles.find((a: any) => a.id === resolution.article_id);
+  
+  if (!newArticleData) {
+    console.error(`   ❌ Could not find NEW article data in candidate`);
+    throw new Error(`Article ${resolution.article_id} not found in candidate`);
+  }
+  
+  console.log(`\n🔄 UPDATE Article (${position}):`);
+  console.log(`   Original ID: ${originalArticle.article_id}`);
+  console.log(`   Original Slug: ${originalArticle.slug}`);
+  console.log(`   Original Date: ${originalArticle.pub_date_only}`);
+  console.log(`   Update Source: ${resolution.article_id} (${resolution.pub_date})`);
+  
+  // Check if original article already published
+  const existingArticle = getPublishedArticle(originalArticle.article_id);
+  
+  if (!existingArticle) {
+    // First time publishing this article
+    console.log(`   ℹ️  First publication of this article (with update)`);
+    
+    createPublishedArticle({
+      id: originalArticle.article_id,
+      publication_id: publicationId,
+      slug: originalArticle.slug,
+      headline: originalArticle.summary.split('.')[0] + '.',
+      summary: originalArticle.summary,
+      full_report: originalArticle.full_report || originalArticle.summary,
+      position: position,
+      is_update: false,
+      original_pub_date: originalArticle.pub_date_only
+    });
+    
+    console.log(`   ✅ Created published_articles entry for original`);
+  } else {
+    console.log(`   ℹ️  Article already published on ${existingArticle.original_pub_date}`);
+  }
+  
+  // Add update record using NEW article's content from candidate
+  createArticleUpdate({
+    article_id: originalArticle.article_id,  // ORIGINAL article ID
+    update_date: resolution.pub_date,
+    update_summary: newArticleData.summary,  // From candidate, not articles_meta
+    source_article_id: resolution.article_id,  // NEW article UUID
+    publication_id: publicationId
+  });
+  
+  console.log(`   ✅ Created article_updates entry`);
+  
+  // Link article to this publication
+  linkArticleToPublication({
+    publication_id: publicationId,
+    article_id: originalArticle.article_id,
+    position: position,
+    is_primary: false  // This is an update, not the original publication
+  });
+  
+  console.log(`   ✅ Linked to publication`);
+}
+
+/**
+ * Main execution
+ */
+async function main() {
+  console.log('🚀 Publication Generation - Step 6\n');
+  
+  const options = parseArgs();
+  
+  console.log(`⚙️  Configuration:`);
+  console.log(`   Date: ${options.date}`);
+  console.log(`   Force: ${options.force ? 'YES' : 'NO'}\n`);
+  
+  // Check if publication already exists
+  if (!options.force) {
+    const existingPub = getPublicationByDate(options.date);
+    if (existingPub) {
+      console.log(`⚠️  Publication already exists for ${options.date}`);
+      console.log(`   ID: ${existingPub.id}`);
+      console.log(`   Headline: ${existingPub.headline}`);
+      console.log(`   Use --force to re-generate\n`);
+      process.exit(0);
+    }
+  } else {
+    // Delete existing publication if --force
+    const existingPub = getPublicationByDate(options.date);
+    if (existingPub) {
+      console.log(`🗑️  Deleting existing publication: ${existingPub.id}\n`);
+      deletePublication(existingPub.id);
+    }
+  }
+  
+  // 1. Load publication candidate from structured_news
+  const candidate = getStructuredNewsByDate(options.date);
+  if (!candidate) {
+    console.error(`❌ No publication candidate found for ${options.date}`);
+    console.error(`   Run: npx tsx scripts/content-generation-v2/news-structured.ts --date ${options.date}`);
+    process.exit(1);
+  }
+  
+  console.log(`📊 Loaded publication candidate:`);
+  console.log(`   Headline: ${candidate.headline}`);
+  console.log(`   Articles: ${candidate.total_articles}`);
+  console.log(`   Pub ID: ${candidate.pub_id}\n`);
+  
+  const candidateData = JSON.parse(candidate.data) as CyberAdvisoryType;
+  
+  // 2. Load resolution decisions
+  const resolutions = getResolutionsByDate(options.date);
+  
+  if (resolutions.length === 0) {
+    console.error(`❌ No resolution decisions found for ${options.date}`);
+    console.error(`   Run: npx tsx scripts/content-generation-v2/resolve-duplicates.ts --date ${options.date}`);
+    process.exit(1);
+  }
+  
+  console.log(`📊 Loaded ${resolutions.length} resolution decisions:`);
+  
+  // 3. Filter articles to publish (NEW and UPDATE only)
+  const toPublish = resolutions.filter(r => 
+    r.decision === 'NEW' || r.decision === 'UPDATE'
+  );
+  
+  const newCount = resolutions.filter(r => r.decision === 'NEW').length;
+  const updateCount = resolutions.filter(r => r.decision === 'UPDATE').length;
+  const skipCount = resolutions.filter(r => r.decision === 'SKIP').length;
+  
+  console.log(`   NEW: ${newCount}`);
+  console.log(`   UPDATE: ${updateCount}`);
+  console.log(`   SKIP: ${skipCount}`);
+  console.log(`   To Publish: ${toPublish.length}\n`);
+  
+  if (toPublish.length === 0) {
+    console.error(`❌ No articles to publish (all marked SKIP)`);
+    process.exit(1);
+  }
+  
+  // 4. Determine publication metadata
+  let finalHeadline = candidateData.headline;
+  let finalSummary = candidateData.summary;
+  
+  // Generate deterministic slug based on pub_type and date
+  // Default to 'daily' if not specified in candidate
+  const pubType = candidate.pub_type || 'daily';
+  const finalSlug = `${pubType}_threat_publications_${options.date}`;
+  
+  console.log(`📝 Publication slug: ${finalSlug} (${pubType} publication)\n`);
+  
+  if (skipCount > 0) {
+    console.log(`⚠️  ${skipCount} article(s) SKIPped`);
+    console.log(`🔄 Regenerating publication headline and summary...\n`);
+    
+    // Get article data for remaining articles
+    const remainingArticles = toPublish.map(r => {
+      if (r.decision === 'NEW') {
+        const article = getArticleMeta(r.canonical_article_id!);
+        return {
+          slug: article!.slug,
+          headline: article!.summary.split('.')[0] + '.',
+          summary: article!.summary
+        };
+      } else {
+        // UPDATE: get from candidate
+        const article = candidateData.articles.find((a: any) => a.id === r.article_id);
+        return {
+          slug: article!.slug,
+          headline: article!.summary.split('.')[0] + '.',
+          summary: article!.summary
+        };
+      }
+    });
+    
+    try {
+      const regenerated = await regeneratePublicationMetadata(candidateData, remainingArticles);
+      finalHeadline = regenerated.headline;
+      finalSummary = regenerated.summary;
+      
+      console.log(`   ✅ Regenerated metadata:`);
+      console.log(`      Headline: ${finalHeadline}\n`);
+    } catch (error: any) {
+      console.error(`   ❌ Failed to regenerate metadata: ${error.message}`);
+      console.log(`   ⚠️  Using original publication metadata\n`);
+    }
+  }
+  
+  // 5. Create publication record
+  const publicationId = `pub-${options.date}`;
+  
+  console.log(`📝 Creating publication record...`);
+  createPublication({
+    id: publicationId,
+    pub_date: options.date,
+    headline: finalHeadline,
+    summary: finalSummary,
+    slug: finalSlug,
+    article_count: toPublish.length
+  });
+  
+  console.log(`   ✅ Created publication: ${publicationId}`);
+  console.log(`      Headline: ${finalHeadline}`);
+  console.log(`      Slug: ${finalSlug}`);
+  console.log(`      Articles: ${toPublish.length}`);
+  
+  // 6. Process each article
+  console.log(`\n📄 Processing articles...`);
+  
+  let position = 1;
+  let successCount = 0;
+  let errorCount = 0;
+  
+  for (const resolution of toPublish) {
+    try {
+      if (resolution.decision === 'NEW') {
+        await processNewArticle(resolution, publicationId, position);
+        successCount++;
+      } else if (resolution.decision === 'UPDATE') {
+        await processUpdateArticle(resolution, publicationId, candidateData, position);
+        successCount++;
+      }
+      position++;
+    } catch (error: any) {
+      console.error(`\n❌ Failed to process article ${resolution.article_id}:`);
+      console.error(`   ${error.message}`);
+      errorCount++;
+    }
+  }
+  
+  // Final summary
+  console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('📊 Publication Generation Summary:');
+  console.log(`   Publication ID: ${publicationId}`);
+  console.log(`   Date: ${options.date}`);
+  console.log(`   Headline: ${finalHeadline}`);
+  console.log(`   Slug: ${finalSlug}`);
+  console.log(`   Articles processed: ${successCount} / ${toPublish.length}`);
+  if (errorCount > 0) {
+    console.log(`   ⚠️  Errors: ${errorCount}`);
+  }
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  
+  if (successCount > 0) {
+    console.log('\n✅ Publication generation complete!\n');
+    
+    console.log('Next steps:');
+    console.log('  1. View publication:');
+    console.log(`     sqlite3 logs/content-generation-v2.db "SELECT * FROM publications WHERE id = '${publicationId}'"`);
+    console.log('  2. View articles:');
+    console.log(`     sqlite3 logs/content-generation-v2.db "SELECT * FROM published_articles WHERE publication_id = '${publicationId}'"`);
+    console.log('  3. View updates:');
+    console.log(`     sqlite3 logs/content-generation-v2.db "SELECT * FROM article_updates WHERE publication_id = '${publicationId}'"`);
+  } else {
+    console.error('\n❌ No articles were successfully processed');
+    process.exit(1);
+  }
+}
+
+// Run if called directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch(error => {
+    console.error('❌ Fatal error:', error);
+    process.exit(1);
+  });
+}
+
+// Export functions for use in other scripts
+export {
+  regeneratePublicationMetadata,
+  processNewArticle,
+  processUpdateArticle
+};

@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generate High-Quality Favicon PNGs</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0A0E1A;
+            color: #00FF88;
+            padding: 40px;
+            margin: 0;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            background: linear-gradient(90deg, #00D9FF, #7B2FFF);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 30px;
+        }
+        .instructions {
+            background: #0F1419;
+            border: 2px solid #00D9FF;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        .preview-section {
+            background: #0F1419;
+            border: 2px solid #7B2FFF;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        .previews {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+        .preview-item {
+            text-align: center;
+            background: #1A1F2E;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #00D9FF30;
+        }
+        .preview-item canvas {
+            background: white;
+            border: 2px solid #00D9FF;
+            border-radius: 4px;
+            margin: 10px 0;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+        }
+        button {
+            background: linear-gradient(135deg, #00D9FF, #7B2FFF);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Courier New', monospace;
+            margin: 10px 5px;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 217, 255, 0.5);
+        }
+        .download-section {
+            text-align: center;
+            margin-top: 30px;
+        }
+        .status {
+            background: #1A1F2E;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+            color: #00D9FF;
+        }
+        code {
+            background: #1A1F2E;
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: #00FF88;
+        }
+        .note {
+            background: #FF006E20;
+            border: 1px solid #FF006E;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #FFB3D1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 High-Quality Favicon PNG Generator</h1>
+        
+        <div class="instructions">
+            <h2 style="color: #00D9FF; margin-top: 0;">📋 Instructions</h2>
+            <ol style="line-height: 2;">
+                <li>Click "Generate PNGs" to render your SVG favicon at different sizes</li>
+                <li>Review the previews below (shown at actual size and 2x zoom)</li>
+                <li>Download each PNG file using the buttons</li>
+                <li>Replace the files in <code>public/favicon-XX.png</code></li>
+            </ol>
+            
+            <div class="note">
+                <strong>⚠️ Note:</strong> After downloading, manually place the PNG files in your <code>public/</code> directory, then rebuild your site with <code>npm run generate</code>
+            </div>
+        </div>
+
+        <div class="preview-section">
+            <h2 style="color: #7B2FFF; margin-top: 0; text-align: center;">Preview & Download</h2>
+            
+            <div class="download-section">
+                <button onclick="generateAllPNGs()">🚀 Generate PNGs from SVG</button>
+            </div>
+            
+            <div id="status" class="status" style="display: none;"></div>
+            
+            <div class="previews" id="previews"></div>
+            
+            <div class="download-section" id="downloadButtons" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        let canvases = {};
+
+        async function generateAllPNGs() {
+            const statusDiv = document.getElementById('status');
+            const previewsDiv = document.getElementById('previews');
+            const downloadDiv = document.getElementById('downloadButtons');
+            
+            statusDiv.style.display = 'block';
+            statusDiv.textContent = '⏳ Loading SVG...';
+            previewsDiv.innerHTML = '';
+            downloadDiv.innerHTML = '';
+            downloadDiv.style.display = 'none';
+
+            try {
+                // Load the SVG
+                const response = await fetch('../public/favicon.svg');
+                const svgText = await response.text();
+                
+                // Create blob URL for the SVG
+                const blob = new Blob([svgText], { type: 'image/svg+xml' });
+                const url = URL.createObjectURL(blob);
+                
+                // Sizes to generate
+                const sizes = [16, 32, 48];
+                
+                statusDiv.textContent = '🎨 Rendering PNGs...';
+                
+                // Create an image element to load the SVG
+                const img = new Image();
+                
+                img.onload = async function() {
+                    for (const size of sizes) {
+                        await renderSize(img, size);
+                    }
+                    
+                    URL.revokeObjectURL(url);
+                    statusDiv.textContent = '✅ All PNGs generated successfully!';
+                    downloadDiv.style.display = 'block';
+                };
+                
+                img.onerror = function() {
+                    statusDiv.textContent = '❌ Error loading SVG';
+                    statusDiv.style.background = '#FF006E30';
+                };
+                
+                img.src = url;
+                
+            } catch (error) {
+                statusDiv.textContent = '❌ Error: ' + error.message;
+                statusDiv.style.background = '#FF006E30';
+            }
+        }
+
+        async function renderSize(img, size) {
+            const previewsDiv = document.getElementById('previews');
+            const downloadDiv = document.getElementById('downloadButtons');
+            
+            // Create canvas
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            
+            // Enable high-quality rendering
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            
+            // Draw the SVG onto canvas
+            ctx.drawImage(img, 0, 0, size, size);
+            
+            // Store canvas
+            canvases[size] = canvas;
+            
+            // Create preview
+            const previewItem = document.createElement('div');
+            previewItem.className = 'preview-item';
+            
+            const title = document.createElement('h3');
+            title.textContent = `${size}×${size}px`;
+            title.style.color = '#00D9FF';
+            title.style.marginTop = '0';
+            
+            // Actual size preview
+            const actualCanvas = canvas.cloneNode();
+            const actualCtx = actualCanvas.getContext('2d');
+            actualCtx.drawImage(canvas, 0, 0);
+            actualCanvas.title = 'Actual size';
+            
+            // 2x preview
+            const zoomCanvas = document.createElement('canvas');
+            zoomCanvas.width = size * 2;
+            zoomCanvas.height = size * 2;
+            const zoomCtx = zoomCanvas.getContext('2d');
+            zoomCtx.imageSmoothingEnabled = false;
+            zoomCtx.drawImage(canvas, 0, 0, size * 2, size * 2);
+            zoomCanvas.title = '2x zoom';
+            
+            const actualLabel = document.createElement('div');
+            actualLabel.textContent = 'Actual Size';
+            actualLabel.style.color = '#A0A0A0';
+            actualLabel.style.fontSize = '12px';
+            actualLabel.style.marginTop = '5px';
+            
+            const zoomLabel = document.createElement('div');
+            zoomLabel.textContent = '2× Zoom';
+            zoomLabel.style.color = '#A0A0A0';
+            zoomLabel.style.fontSize = '12px';
+            zoomLabel.style.marginTop = '5px';
+            
+            previewItem.appendChild(title);
+            previewItem.appendChild(actualCanvas);
+            previewItem.appendChild(actualLabel);
+            previewItem.appendChild(zoomCanvas);
+            previewItem.appendChild(zoomLabel);
+            
+            previewsDiv.appendChild(previewItem);
+            
+            // Create download button
+            const downloadBtn = document.createElement('button');
+            downloadBtn.textContent = `📥 Download ${size}×${size} PNG`;
+            downloadBtn.onclick = () => downloadPNG(size);
+            downloadDiv.appendChild(downloadBtn);
+        }
+
+        function downloadPNG(size) {
+            const canvas = canvases[size];
+            if (!canvas) {
+                alert('Canvas not found! Please generate PNGs first.');
+                return;
+            }
+            
+            // Convert to blob and download
+            canvas.toBlob((blob) => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `favicon-${size}.png`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 'image/png');
+        }
+
+        function downloadAll() {
+            [16, 32, 48].forEach(size => {
+                setTimeout(() => downloadPNG(size), size * 10);
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="eyeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF006E;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#8338EC;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#3A86FF;stop-opacity:1" />
+    </linearGradient>
+    <radialGradient id="irisGrad" cx="50%" cy="50%">
+      <stop offset="0%" style="stop-color:#00D9FF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7B2FFF;stop-opacity:1" />
+    </radialGradient>
+    <filter id="eyeGlow">
+      <feGaussianBlur stdDeviation="1.5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Dark background -->
+  <rect width="32" height="32" fill="#050A14" rx="6"/>
+  
+  <!-- Outer eye shape -->
+  <ellipse cx="16" cy="16" rx="12" ry="7" fill="none" stroke="url(#eyeGrad)" stroke-width="2" filter="url(#eyeGlow)"/>
+  
+  <!-- Iris -->
+  <circle cx="16" cy="16" r="5" fill="url(#irisGrad)" filter="url(#eyeGlow)"/>
+  
+  <!-- Pupil with scanning line -->
+  <circle cx="16" cy="16" r="2.5" fill="#050A14"/>
+  
+  <!-- Scanning line in pupil -->
+  <line x1="16" y1="13.5" x2="16" y2="18.5" stroke="#00D9FF" stroke-width="0.8" filter="url(#eyeGlow)"/>
+  
+  <!-- Tech details around eye -->
+  <circle cx="16" cy="16" r="8" fill="none" stroke="url(#eyeGrad)" stroke-width="0.5" opacity="0.5" stroke-dasharray="2,3"/>
+  
+  <!-- Corner targeting brackets -->
+  <path d="M3 7 L3 3 L7 3" fill="none" stroke="#FF006E" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M25 3 L29 3 L29 7" fill="none" stroke="#3A86FF" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M29 25 L29 29 L25 29" fill="none" stroke="#FF006E" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M7 29 L3 29 L3 25" fill="none" stroke="#3A86FF" stroke-width="1.5" stroke-linecap="round"/>
+  
+  <!-- Crosshair marks -->
+  <line x1="5" y1="16" x2="8" y2="16" stroke="#00D9FF" stroke-width="1" opacity="0.7"/>
+  <line x1="24" y1="16" x2="27" y2="16" stroke="#00D9FF" stroke-width="1" opacity="0.7"/>
+  <line x1="16" y1="5" x2="16" y2="8" stroke="#00D9FF" stroke-width="1" opacity="0.7"/>
+  <line x1="16" y1="24" x2="16" y2="27" stroke="#00D9FF" stroke-width="1" opacity="0.7"/>
+  
+  <!-- Data points -->
+  <circle cx="6" cy="16" r="1" fill="#FF006E"/>
+  <circle cx="26" cy="16" r="1" fill="#3A86FF"/>
+</svg>

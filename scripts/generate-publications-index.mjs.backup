@@ -1,0 +1,119 @@
+import { readdir, readFile, writeFile, stat } from 'fs/promises'
+import { join } from 'path'
+
+async function getAllJsonFiles(dirPath) {
+  const files = []
+  
+  async function scanDir(currentPath) {
+    const items = await readdir(currentPath)
+    
+    for (const item of items) {
+      const itemPath = join(currentPath, item)
+      const itemStat = await stat(itemPath)
+      
+      if (itemStat.isDirectory()) {
+        await scanDir(itemPath)
+      } else if (item.endsWith('.json')) {
+        files.push(itemPath)
+      }
+    }
+  }
+  
+  await scanDir(dirPath)
+  return files
+}
+
+async function generatePublicationsIndex() {
+  try {
+    console.log('🔄 Generating publications index...')
+    
+    // Path to publications directory
+    const publicationsDir = join(process.cwd(), 'public/data/publications')
+    
+    // Get all publication files recursively
+    const jsonFiles = await getAllJsonFiles(publicationsDir)
+    
+    const publications = []
+    
+    // Read and transform each publication
+    for (const filePath of jsonFiles) {
+      try {
+        const content = await readFile(filePath, 'utf-8')
+        const publication = JSON.parse(content)
+        
+        // Determine publication type from keywords or default to weekly-digest
+        let publicationType = 'weekly-digest'
+        const keywords = (publication.keywords || []).map(k => k.toLowerCase())
+        if (keywords.includes('daily') || keywords.includes('daily-digest')) {
+          publicationType = 'daily-digest'
+        } else if (keywords.includes('special') || keywords.includes('special-report')) {
+          publicationType = 'special-report'
+        } else if (keywords.includes('monthly') || keywords.includes('monthly-roundup')) {
+          publicationType = 'monthly-roundup'
+        }
+        
+        // Extract categories from keywords (capitalize first letter)
+        const categories = (publication.keywords || [])
+          .filter(k => !['daily', 'weekly', 'monthly', 'special', 'digest', 'report', 'roundup'].includes(k.toLowerCase()))
+          .slice(0, 3) // Limit to 3 categories
+          .map(cat => cat.charAt(0).toUpperCase() + cat.slice(1))
+        
+        // Default categories if none found
+        const finalCategories = categories.length > 0 
+          ? categories 
+          : ['Publications', publicationType === 'weekly-digest' ? 'Weekly Digest' : publicationType === 'daily-digest' ? 'Daily Digest' : 'Special Report']
+        
+        // Transform CyberPublication to PublicationMetadata for listings
+        const metadata = {
+          id: publication.pub_id,
+          slug: publication.slug,
+          title: publication.title,
+          headline: publication.headline,
+          publishedAt: publication.extract_datetime,
+          type: publicationType,
+          articleCount: (publication.articles || []).length,
+          excerpt: publication.summary.slice(0, 200) + (publication.summary.length > 200 ? '...' : ''),
+          tags: publication.keywords || [],
+          categories: finalCategories,
+          readingTime: Math.max(10, (publication.articles || []).length * 3), // 3 min per article, min 10
+          author: {
+            name: 'CyberNetSec Editorial Team',
+            role: 'Threat Intelligence'
+          }
+        }
+        
+        publications.push(metadata)
+      } catch (error) {
+        console.warn(`Failed to parse publication file: ${filePath}`, error)
+        continue
+      }
+    }
+    
+    // Sort publications by published date (newest first)
+    publications.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+    
+    // Create the index structure
+    const publicationsIndex = {
+      publications,
+      totalCount: publications.length,
+      lastUpdated: new Date().toISOString()
+    }
+    
+    // Write the generated index
+    const outputPath = join(process.cwd(), 'public/data/publications-index.json')
+    await writeFile(outputPath, JSON.stringify(publicationsIndex, null, 2))
+    
+    console.log(`✅ Generated publications index with ${publications.length} publications`)
+    
+  } catch (error) {
+    console.error('❌ Error generating publications index:', error)
+    process.exit(1)
+  }
+}
+
+// Run if called directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  generatePublicationsIndex()
+}
+
+export { generatePublicationsIndex }

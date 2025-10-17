@@ -1,0 +1,183 @@
+#!/usr/bin/env npx tsx
+
+/**
+ * Generate optimized Twitter posts for articles
+ * 
+ * This script reads the articles-raw.json and displays them one at a time
+ * for manual tweet generation by the LLM assistant.
+ * 
+ * Output: Individual JSON files (output-1.json, output-2.json, etc.)
+ */
+
+import fs from 'fs';
+import path from 'path';
+
+const TEMP_DIR = path.join(process.cwd(), 'tmp', 'twitter');
+const INPUT_FILE = path.join(TEMP_DIR, 'articles-raw.json');
+const OUTPUT_DIR = path.join(TEMP_DIR, 'outputs');
+
+// Ensure output directory exists
+if (!fs.existsSync(OUTPUT_DIR)) {
+  fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+}
+
+interface Article {
+  slug: string;
+  headline: string;
+  summary: string;
+  full_report_excerpt: string;
+  category: string;
+  is_update: number;
+  severity: string;
+}
+
+interface TweetOutput {
+  slug: string;
+  headline: string;
+  tweet_text: string;
+  category: string;
+  severity: string;
+  is_update: boolean;
+  char_count: number;
+}
+
+const client = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+});
+
+/**
+ * Generate an optimized tweet for a single article using Claude
+ */
+async function generateTweetForArticle(article: Article, index: number): Promise<TweetOutput> {
+  const categoryArray = JSON.parse(article.category);
+  const primaryCategory = categoryArray[0].toLowerCase().replace(/\s+/g, '-');
+
+  const prompt = `You are a cybersecurity social media expert. Generate a compelling Twitter post for this article.
+
+**ARTICLE DATA:**
+Headline: ${article.headline}
+Summary: ${article.summary}
+Report Excerpt: ${article.full_report_excerpt}
+Category: ${article.category}
+Severity: ${article.severity}
+Is Update: ${article.is_update === 1}
+
+**TWITTER OPTIMIZATION REQUIREMENTS:**
+
+1. **Character Budget**: Maximum 228 characters (leaves room for prefix + URL)
+   - You will write ONLY the tweet content
+   - User will add prefix like "🚨 BREAKING: " (13 chars) or "📢 UPDATE: " (11 chars)
+   - User will add URL at end (23 chars for t.co)
+   - Total must be under 280 chars
+
+2. **Inline Hashtags** (CRITICAL):
+   - ❌ NO hashtag dump at end: #CyberSecurity #InfoSec #ThreatIntel
+   - ✅ YES inline hashtags: "#Qantas breach" instead of "Qantas... #Qantas"
+   - Use specific viral terms as hashtags:
+     * CVE IDs: #CVE202559230, #CVE202524990
+     * Companies: #Microsoft, #F5, #Oracle, #Salesforce, #Discord
+     * Threat actors: #Storm2372, #FlaxTyphoon, #Clop, #LockBit
+     * Ransomware: #Rhysida, #Medusa
+     * Tools/products: #BIG-IP, #ScreenConnect, #Teams
+   - Avoid generic hashtags that duplicate words already in the text
+
+3. **Content Strategy**:
+   - Lead with the most shocking/important detail
+   - Include specific numbers (affected users, CVE score, deadline dates)
+   - Mention real victims/companies if available
+   - Create urgency ("Patch now", "Actively exploited", "CISA KEV")
+   - Use emojis sparingly (1-2 max)
+
+4. **Viral Entity Focus**:
+   - Big company breaches = instant engagement
+   - New CVEs with high CVSS scores
+   - Nation-state actors (#China, #Russia APTs)
+   - Zero-day exploits
+   - Ransomware groups claiming victims
+   - CISA KEV additions (mandatory patching = urgency)
+
+**OUTPUT FORMAT:**
+Return ONLY the tweet text (no quotes, no prefix, no URL). Must be ≤228 characters.
+
+Example good tweet (217 chars):
+"New #LinkPro Linux rootkit uses #eBPF to hide from security tools & waits for 'magic packet' to activate. 🐧🪄 Found in #AWS breach via #CVE202423897 Jenkins vuln. Kernel-level stealth making detection nearly impossible."
+
+Generate the optimized tweet now:`;
+
+  console.log(`\n[${index}/20] Generating tweet for: ${article.slug.substring(0, 60)}...`);
+
+  const message = await client.messages.create({
+    model: 'claude-3-5-sonnet-20241022',
+    max_tokens: 500,
+    messages: [
+      {
+        role: 'user',
+        content: prompt,
+      },
+    ],
+  });
+
+  const tweetText = message.content[0].type === 'text' ? message.content[0].text.trim() : '';
+
+  // Validate character count
+  if (tweetText.length > 228) {
+    console.warn(`  ⚠️  Tweet too long (${tweetText.length} chars), truncating...`);
+  }
+
+  const output: TweetOutput = {
+    slug: article.slug,
+    headline: article.headline,
+    tweet_text: tweetText.substring(0, 228),
+    category: primaryCategory,
+    severity: article.severity,
+    is_update: article.is_update === 1,
+    char_count: tweetText.length,
+  };
+
+  console.log(`  ✓ Generated (${output.char_count} chars): ${tweetText.substring(0, 80)}...`);
+
+  return output;
+}
+
+/**
+ * Main execution
+ */
+async function main() {
+  console.log('🐦 Twitter Tweet Generator');
+  console.log('━'.repeat(60));
+
+  // Read articles
+  const articles: Article[] = JSON.parse(fs.readFileSync(INPUT_FILE, 'utf-8'));
+  console.log(`\n📄 Loaded ${articles.length} articles from database`);
+  console.log(`📁 Output directory: ${OUTPUT_DIR}\n`);
+
+  // Process each article
+  for (let i = 0; i < articles.length; i++) {
+    const article = articles[i];
+    if (!article) continue;
+    
+    const outputFile = path.join(OUTPUT_DIR, `output-${i + 1}.json`);
+
+    try {
+      const tweet = await generateTweetForArticle(article, i + 1);
+
+      // Save to individual file
+      fs.writeFileSync(outputFile, JSON.stringify(tweet, null, 2));
+      console.log(`  💾 Saved to: output-${i + 1}.json`);
+
+      // Small delay to avoid rate limits
+      if (i < articles.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    } catch (error) {
+      console.error(`  ❌ Error processing article ${i + 1}:`, error);
+      // Continue with next article
+    }
+  }
+
+  console.log('\n' + '━'.repeat(60));
+  console.log(`✅ Complete! Generated ${articles.length} tweet files`);
+  console.log(`\n📂 Next step: Run consolidation script to create tweets.json`);
+}
+
+main().catch(console.error);
