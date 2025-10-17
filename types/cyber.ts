@@ -296,33 +296,26 @@ export interface SocialMediaContent {
 
 // ===== Display Data =====
 
+// Article categories - aligned with LLM schema (news-structured-schema.ts)
 export type ArticleCategory = 
+  | 'Ransomware'
   | 'Malware'
   | 'Threat Actor'
   | 'Vulnerability'
   | 'Data Breach'
-  | 'Threat Briefing'
-  | 'Ransomware'
   | 'Phishing'
   | 'Supply Chain Attack'
-  | 'Zero-Day Exploit'
   | 'Cyberattack'
-  | 'Campaign'
-  | 'Insider Threat'
-  | 'IoT Security'
+  | 'Industrial Control Systems'
   | 'Cloud Security'
-  | 'Network Security'
-  | 'Endpoint Security'
-  | 'Incident Response'
-  | 'Compliance and Regulation'
-  | 'Emerging Threats'
-  | 'Cybersecurity Awareness'
-  | 'Digital Forensics'
-  | 'Cryptocurrency and Blockchain'
-  | 'AI and Machine Learning in Security'
   | 'Mobile Security'
-  | 'Web Application Security'
-  | 'Industrial Control Systems (ICS)'
+  | 'IoT Security'
+  | 'Patch Management'
+  | 'Threat Intelligence'
+  | 'Incident Response'
+  | 'Security Operations'
+  | 'Policy and Compliance'
+  | 'Regulatory'
   | 'Other';
 
 export interface DisplayMetadata {

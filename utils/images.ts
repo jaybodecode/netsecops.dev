@@ -11,34 +11,27 @@ export type PublicationType = 'daily' | 'weekly' | 'monthly' | 'special-report';
 
 /**
  * Category to image mapping
+ * Aligned with LLM schema categories
  */
 const CATEGORY_IMAGE_MAP: Record<ArticleCategory, string> = {
+  'Ransomware': 'ransomware.png',
   'Malware': 'malware.png',
   'Threat Actor': 'threat-actor.png',
   'Vulnerability': 'vulnerability.png',
   'Data Breach': 'data-breach.png',
-  'Threat Briefing': 'threat-briefing.png',
-  'Ransomware': 'ransomware.png',
   'Phishing': 'phishing.png',
-  'Supply Chain Attack': 'supply-chain.png',
-  'Zero-Day Exploit': 'zero-day.png',
+  'Supply Chain Attack': 'supply-chain-attack.png',
   'Cyberattack': 'cyberattack.png',
-  'Campaign': 'campaign.png',
-  'Insider Threat': 'insider-threat.png',
-  'IoT Security': 'iot-security.png',
+  'Industrial Control Systems': 'industrial-control-systems.png',
   'Cloud Security': 'cloud-security.png',
-  'Network Security': 'network-security.png',
-  'Endpoint Security': 'endpoint-security.png',
-  'Incident Response': 'incident-response.png',
-  'Compliance and Regulation': 'compliance.png',
-  'Emerging Threats': 'emerging-threats.png',
-  'Cybersecurity Awareness': 'cybersecurity-awareness.png',
-  'Digital Forensics': 'digital-forensics.png',
-  'Cryptocurrency and Blockchain': 'cryptocurrency.png',
-  'AI and Machine Learning in Security': 'ai-security.png',
   'Mobile Security': 'mobile-security.png',
-  'Web Application Security': 'web-security.png',
-  'Industrial Control Systems (ICS)': 'ics-security.png',
+  'IoT Security': 'iot-security.png',
+  'Patch Management': 'patch-management.png',
+  'Threat Intelligence': 'threat-intelligence.png',
+  'Incident Response': 'incident-response.png',
+  'Security Operations': 'security-operations.png',
+  'Policy and Compliance': 'policy-and-compliance.png',
+  'Regulatory': 'regulatory.png',
   'Other': 'other.png',
 };
 

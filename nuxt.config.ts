@@ -48,6 +48,31 @@ export default defineNuxtConfig({
       xl: 1280,
       xxl: 1536,
     },
+    // Custom presets for different image types
+    presets: {
+      // Category background images - aggressive optimization for backgrounds
+      // Usage: <NuxtImg src="..." preset="categoryBg" />
+      // Target: ~100-150KB output (down from 600KB+)
+      categoryBg: {
+        modifiers: {
+          format: 'webp',
+          quality: 55,
+          width: 1000,
+          height: 600,
+          fit: 'cover',
+        },
+      },
+      // Publication background images
+      publicationBg: {
+        modifiers: {
+          format: 'webp',
+          quality: 55,
+          width: 1000,
+          height: 600,
+          fit: 'cover',
+        },
+      },
+    },
   },
 
   // Icon configuration
@@ -193,34 +218,34 @@ export default defineNuxtConfig({
 
   // Route rules for cache control headers
   routeRules: {
-    // Homepage - cache for 1 hour (updated frequently with latest articles)
+    // Homepage - cache for 10 min (GitHub Pages max), must revalidate for fresh content
     '/': { 
       headers: { 
-        'Cache-Control': 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400' 
+        'Cache-Control': 'public, max-age=600, must-revalidate' 
       } 
     },
     
-    // Article index pages - cache for 1 hour (updated when new articles added)
+    // Article index pages - cache for 10 min, must revalidate
     '/articles': { 
       headers: { 
-        'Cache-Control': 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400' 
+        'Cache-Control': 'public, max-age=600, must-revalidate' 
       } 
     },
     '/articles/**': { 
       headers: { 
-        'Cache-Control': 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400' 
+        'Cache-Control': 'public, max-age=600, must-revalidate' 
       } 
     },
     
-    // Publication index pages - cache for 1 hour (updated daily with new publications)
+    // Publication index pages - cache for 10 min, must revalidate
     '/publications': { 
       headers: { 
-        'Cache-Control': 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400' 
+        'Cache-Control': 'public, max-age=600, must-revalidate' 
       } 
     },
     '/publications/**': { 
       headers: { 
-        'Cache-Control': 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400' 
+        'Cache-Control': 'public, max-age=600, must-revalidate' 
       } 
     },
     

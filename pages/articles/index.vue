@@ -535,6 +535,7 @@
                   <NuxtImg
                     :src="getArticleImageUrl(article.categories)"
                     :alt="article.headline"
+                    preset="categoryBg"
                     loading="lazy"
                     class="w-full h-full object-cover opacity-30 md:opacity-60"
                     style="mask: linear-gradient(to right, transparent 0%, black 12%); -webkit-mask: linear-gradient(to right, transparent 0%, black 12%);"
@@ -618,7 +619,7 @@
 
       <!-- Empty State -->
       <div v-else class="text-center py-16">
-        <Icon name="her oicons:document-text-20-solid" class="w-16 h-16 mx-auto mb-4 text-gray-600" />
+        <Icon name="heroicons:document-text-20-solid" class="w-16 h-16 mx-auto mb-4 text-gray-600" />
         <h2 class="text-2xl font-bold mb-2 text-gray-300">No Articles Found</h2>
         <p class="text-gray-400 mb-6">
           There are no cybersecurity articles available yet.
