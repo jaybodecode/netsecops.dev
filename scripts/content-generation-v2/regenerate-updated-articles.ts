@@ -229,6 +229,17 @@ function exportArticleJSON(article: Article): void {
   const articleData = getArticleData(article.id);
   const updates = getArticleUpdates(article.id);
   
+  // Ensure dates are in ISO 8601 format with time and timezone
+  const createdAt = article.created_at.includes('T') 
+    ? article.created_at 
+    : `${article.created_at}T15:00:00.000Z`;
+  
+  const updatedAt = article.updated_at
+    ? (article.updated_at.includes('T') 
+        ? article.updated_at 
+        : `${article.updated_at}T15:00:00.000Z`)
+    : createdAt;
+  
   const jsonData = {
     id: article.id,
     slug: article.slug,
@@ -252,8 +263,8 @@ function exportArticleJSON(article: Article): void {
     keywords: articleData.tags,
     pub_date: article.pub_date,
     reading_time_minutes: article.reading_time_minutes,
-    createdAt: article.created_at,
-    updatedAt: article.updated_at,
+    createdAt: createdAt,
+    updatedAt: updatedAt,
     updates: updates.map(u => ({
       datetime: u.datetime,
       summary: u.summary,

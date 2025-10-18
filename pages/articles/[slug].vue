@@ -18,6 +18,16 @@ const articleSlug = route.params.slug as string
 // Fetch article data with transformation using slug
 const { data: article, pending, error } = await useArticleBySlug(articleSlug)
 
+// SEO: Article schema (NewsArticle JSON-LD)
+useArticleSeo(article.value)
+
+// SEO: Breadcrumbs (BreadcrumbList JSON-LD)
+useBreadcrumbs([
+  { name: 'Home', url: '/' },
+  { name: 'Articles', url: '/articles' },
+  { name: article.value?.headline || 'Article', url: `/articles/${articleSlug}` },
+])
+
 // Fetch all articles for navigation
 const { data: articlesData } = await useArticlesIndex()
 const allArticles = computed(() => articlesData.value?.articles || [])

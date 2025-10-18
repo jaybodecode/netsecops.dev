@@ -317,6 +317,16 @@ const publicationSlug = route.params.slug as string;
 // Fetch publication data
 const { data: rawPublication, pending: pubPending, error: pubError } = usePublication(publicationSlug);
 
+// SEO: Publication schema (Report JSON-LD) - cast to CyberPublication type
+usePublicationSeo(rawPublication.value as any)
+
+// SEO: Breadcrumbs (BreadcrumbList JSON-LD)
+useBreadcrumbs([
+  { name: 'Home', url: '/' },
+  { name: 'Publications', url: '/publications' },
+  { name: rawPublication.value?.headline || 'Publication', url: `/publications/${publicationSlug}` },
+])
+
 // localStorage keys (shared with articles page)
 const CATEGORIES_STORAGE_KEY = 'selectedCategories';
 const STORAGE_KEY = 'readArticles';

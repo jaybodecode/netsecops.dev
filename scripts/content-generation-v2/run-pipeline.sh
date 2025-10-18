@@ -279,7 +279,7 @@ if (( $(echo "$START_STEP <= 7" | bc -l) )); then
   echo "   → Generating indexes..."
   npx tsx $SCRIPTS_DIR/generate-indexes.ts
   echo "   → Generating RSS feed..."
-  npx tsx $SCRIPTS_DIR/generate-rss.ts --limit 50
+  npx tsx $SCRIPTS_DIR/generate-rss.ts
   echo "   → Generating threat level data..."
   npx tsx $SCRIPTS_DIR/generate-threat-level.ts
   print_success "Step 7 complete"
@@ -297,7 +297,7 @@ fi
 # Step 8.5: Generate OG Images
 if (( $(echo "$START_STEP <= 8.5" | bc -l) )); then
   print_step "🎨 Step 8.5: Generating OG images..."
-  npx tsx $SCRIPTS_DIR/../content-social/generate-twitter-images.ts --date $DATE
+  npx tsx $SCRIPTS_DIR/generate-twitter-images.ts --date $DATE
   print_success "Step 8.5 complete"
   echo ""
 fi

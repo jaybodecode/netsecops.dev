@@ -26,8 +26,18 @@
 import { getDB } from './database/index.js';
 import type { Publication } from './database/schema-publications.js';
 import { existsSync, mkdirSync, writeFileSync } from 'fs';
-import { join } from 'path';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
 
+// Get the directory of this script file
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Default output directory relative to script location
+// scripts/content-generation-v2/generate-rss.ts -> ../../public
+const DEFAULT_OUTPUT_DIR = join(__dirname, '..', '..', 'public');
+
+// Base URL for links (should match your production site)
 const BASE_URL = 'https://cybernetsec.io';
 
 /**
@@ -64,7 +74,7 @@ interface RSSChannel {
  * Parse CLI arguments
  */
 function parseArgs(): Args {
-  const args: Args = { limit: 50 };
+  const args: Args = {};
   
   for (let i = 2; i < process.argv.length; i++) {
     const arg = process.argv[i];
@@ -131,7 +141,7 @@ ${itemsXML}
 /**
  * Get publications for RSS
  */
-function getPublications(limit: number, type?: string): Publication[] {
+function getPublications(limit?: number, type?: string): Publication[] {
   const db = getDB();
   
   let sql = `
@@ -148,11 +158,12 @@ function getPublications(limit: number, type?: string): Publication[] {
     params.push(`%${type}%`);
   }
   
-  sql += `
-    ORDER BY pub_date DESC
-    LIMIT ?
-  `;
-  params.push(limit);
+  sql += ` ORDER BY pub_date DESC`;
+  
+  if (limit !== undefined) {
+    sql += ` LIMIT ?`;
+    params.push(limit);
+  }
   
   const stmt = db.prepare(sql);
   return stmt.all(...params) as Publication[];
@@ -273,7 +284,7 @@ function getAllCategories(): string[] {
 /**
  * Generate main RSS feed (all publications)
  */
-async function generateMainFeed(outputDir: string, limit: number): Promise<void> {
+async function generateMainFeed(outputDir: string, limit?: number): Promise<void> {
   console.log('\n📰 Generating main RSS feed...');
   
   const publications = getPublications(limit);
@@ -314,7 +325,7 @@ async function generateMainFeed(outputDir: string, limit: number): Promise<void>
 /**
  * Generate daily publications feed
  */
-async function generateDailyFeed(outputDir: string, limit: number): Promise<void> {
+async function generateDailyFeed(outputDir: string, limit?: number): Promise<void> {
   console.log('\n📅 Generating daily publications feed...');
   
   const rssDir = join(outputDir, 'rss');
@@ -360,7 +371,7 @@ async function generateDailyFeed(outputDir: string, limit: number): Promise<void
 /**
  * Generate category feeds
  */
-async function generateCategoryFeeds(outputDir: string, limit: number): Promise<void> {
+async function generateCategoryFeeds(outputDir: string, limit?: number): Promise<void> {
   console.log('\n📂 Generating category feeds...');
   
   const categoriesDir = join(outputDir, 'rss', 'categories');
@@ -375,7 +386,7 @@ async function generateCategoryFeeds(outputDir: string, limit: number): Promise<
     const slug = category.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     
     // Get publications that have articles in this category
-    const allPublications = getPublications(limit * 2); // Get more to filter
+    const allPublications = getPublications(limit ? limit * 2 : undefined); // Get more to filter
     const categoryItems: RSSItem[] = [];
     
     for (const pub of allPublications) {
@@ -396,7 +407,7 @@ async function generateCategoryFeeds(outputDir: string, limit: number): Promise<
           categories: categories
         });
         
-        if (categoryItems.length >= limit) break;
+        if (limit && categoryItems.length >= limit) break;
       }
     }
     
@@ -424,14 +435,14 @@ async function generateCategoryFeeds(outputDir: string, limit: number): Promise<
  */
 async function main() {
   const args = parseArgs();
-  const outputDir = args.outputDir || join(process.cwd(), 'public');
-  const limit = args.limit || 50;
+  const outputDir = args.outputDir || DEFAULT_OUTPUT_DIR;
+  const limit = args.limit; // No default limit - include all articles
   
   console.log('='.repeat(60));
   console.log('Step 9: Generate RSS Feeds');
   console.log('='.repeat(60));
   console.log(`Output directory: ${outputDir}`);
-  console.log(`Item limit: ${limit}\n`);
+  console.log(`Item limit: ${limit || 'No limit (all articles)'}\n`);
   
   try {
     // Generate main feed (all publications)
@@ -440,8 +451,8 @@ async function main() {
     // Generate daily feed
     await generateDailyFeed(outputDir, limit);
     
-    // Generate category feeds
-    await generateCategoryFeeds(outputDir, Math.min(limit, 30));
+    // Generate category feeds (limit to 30 if limit is specified)
+    await generateCategoryFeeds(outputDir, limit ? Math.min(limit, 30) : undefined);
     
     console.log('\n' + '='.repeat(60));
     console.log('✅ Step 9 Complete!');

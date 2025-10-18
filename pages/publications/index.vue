@@ -375,7 +375,7 @@ const getCategoryImageForPublication = (publication: PublicationMetadata): strin
   // Fallback: consistently pick from common categories
   const fallbackCategories: ArticleCategory[] = [
     'Malware', 'Threat Actor', 'Vulnerability', 'Data Breach', 
-    'Ransomware', 'Phishing', 'Cyberattack', 'Zero-Day Exploit'
+    'Ransomware', 'Phishing', 'Cyberattack', 'Cloud Security'
   ];
   const index = positiveHash % fallbackCategories.length;
   return getCategoryImageUrl(fallbackCategories[index]!);
@@ -436,6 +436,12 @@ usePageSeo({
   type: 'CollectionPage',
   keywords: ['cybersecurity publications', 'threat intelligence digest', 'security briefings', 'weekly digest', 'daily updates'],
 });
+
+// Breadcrumbs for SEO
+useBreadcrumbs([
+  { name: 'Home', url: '/' },
+  { name: 'Publications', url: '/publications' },
+]);
 </script>
 
 <style scoped>

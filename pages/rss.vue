@@ -62,8 +62,10 @@
             </p>
             <div class="bg-cyan-900/20 border border-cyan-500/30 rounded-lg p-4">
               <p class="text-sm text-gray-300 leading-relaxed m-0">
-                <strong class="text-cyan-400">Note:</strong> RSS feeds are static XML files that update before 9:30 AM CST daily. 
-                Your RSS reader will automatically check for updates and notify you of new content.
+                <strong class="text-cyan-400">Note:</strong> RSS feeds are static XML files that update daily by 9:30 AM CST. 
+                Please configure your RSS client to fetch once per day after 9:30 AM.<br/>
+                <strong class="text-yellow-400">Clients polling hourly or more frequently will have their IP addresses blocked.</strong> 
+                Thank you for being considerate of our server resources!
               </p>
             </div>
           </div>
@@ -353,13 +355,43 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
+// Extend Window interface for Google Tag Manager dataLayer
+declare global {
+  interface Window {
+    dataLayer: any[]
+  }
+}
+
 // SEO Meta Tags - handled by composable
 usePageSeo({
   title: 'RSS Feed Subscriptions',
-  description: 'Subscribe to CybernetSec RSS feeds for real-time cybersecurity threat intelligence, vulnerability alerts, and security news updates.',
+  description: 'Subscribe to CyberNetSec RSS feeds for real-time cybersecurity threat intelligence, CVE alerts, ransomware tracking, data breach notifications, and daily security digests. Updated before 9:30 AM CST daily.',
   type: 'WebPage',
-  keywords: ['RSS feeds', 'cybersecurity news', 'threat intelligence', 'security alerts', 'vulnerability updates'],
+  keywords: [
+    'RSS feeds',
+    'cybersecurity RSS',
+    'threat intelligence feeds',
+    'security alerts RSS',
+    'vulnerability updates',
+    'cybersecurity news feed',
+    'infosec RSS',
+    'cyber threat feed',
+    'security advisories RSS',
+    'CVE RSS feed',
+    'malware feed',
+    'ransomware alerts',
+    'data breach notifications',
+    'CISA alerts RSS',
+    'Feedly cybersecurity',
+    'Inoreader security feeds'
+  ],
 })
+
+// Breadcrumbs for SEO
+useBreadcrumbs([
+  { name: 'Home', url: '/' },
+  { name: 'RSS Feeds', url: '/rss' },
+])
 
 interface FeedMetadata {
   generated_at: string
@@ -430,6 +462,20 @@ const { data: metadata } = await useFetch<FeedMetadata>('/rss/metadata.json')
 
 const copyFeedUrl = async (url: string) => {
   const fullUrl = baseUrl + url
+  
+  // Track RSS feed copy in Google Tag Manager
+  if (process.client && window.dataLayer) {
+    const feedName = url.split('/').pop()?.replace('.xml', '') || 'unknown'
+    const feedType = url.includes('/categories/') ? 'category' : 'main'
+    
+    window.dataLayer.push({
+      event: 'rss_feed_copy',
+      feed_url: url,
+      feed_name: feedName,
+      feed_type: feedType,
+      full_url: fullUrl
+    })
+  }
   
   try {
     await navigator.clipboard.writeText(fullUrl)

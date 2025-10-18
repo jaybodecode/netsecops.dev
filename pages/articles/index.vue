@@ -1048,6 +1048,12 @@ usePageSeo({
   type: 'CollectionPage',
   keywords: ['cybersecurity advisories', 'vulnerability reports', 'threat intelligence', 'CVE database', 'security alerts'],
 });
+
+// Breadcrumbs for SEO
+useBreadcrumbs([
+  { name: 'Home', url: '/' },
+  { name: 'Articles', url: '/articles' },
+]);
 </script>
 
 <style scoped>

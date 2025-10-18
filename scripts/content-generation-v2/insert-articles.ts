@@ -122,6 +122,10 @@ function insertArticle(article: ArticleType, targetDate: string) {
     )
   `);
   
+  // Ensure dates have time and timezone (9am CST = 15:00 UTC)
+  const dateOnly = targetDate.split('T')[0]; // YYYY-MM-DD
+  const dateTime = targetDate.includes('T') ? targetDate : `${dateOnly}T15:00:00.000Z`; // YYYY-MM-DDTHH:MM:SS.SSSZ
+  
   stmt.run(
     article.id,
     article.slug,
@@ -136,10 +140,10 @@ function insertArticle(article: ArticleType, targetDate: string) {
     article.article_type || null,
     article.keywords ? JSON.stringify(article.keywords) : null,
     article.reading_time_minutes || null,
-    targetDate.split('T')[0], // pub_date: Always use structured_news pub_date (YYYY-MM-DD format)
-    targetDate, // extract_datetime: Always use structured_news pub_date at 9am CST (15:00 UTC)
-    targetDate, // created_at
-    targetDate  // updated_at
+    dateOnly, // pub_date: Always use structured_news pub_date (YYYY-MM-DD format)
+    dateTime, // extract_datetime: Always use structured_news pub_date at 9am CST (15:00 UTC)
+    dateTime, // created_at
+    dateTime  // updated_at
   );
 }
 

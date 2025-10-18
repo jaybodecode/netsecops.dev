@@ -8,9 +8,16 @@
 import Database from 'better-sqlite3';
 import { existsSync, mkdirSync } from 'fs';
 import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
 import { ensurePipelineLogTable } from './schema-pipeline-logs.js';
 
-const DEFAULT_DB_PATH = join(process.cwd(), 'logs', 'content-generation-v2.db');
+// Get the directory of this script file
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Database path relative to script location: scripts/content-generation-v2/database/index.ts
+// -> Go up 3 levels to project root, then into logs/
+const DEFAULT_DB_PATH = join(__dirname, '..', '..', '..', 'logs', 'content-generation-v2.db');
 
 let db: Database.Database | null = null;
 let dbInitialized = false;

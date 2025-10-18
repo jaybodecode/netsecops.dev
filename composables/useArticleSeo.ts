@@ -99,7 +99,7 @@ export function useArticleSeo(article: CyberArticle | null | undefined) {
     twitterCard: 'summary_large_image',
     twitterSite: '@CyberNetSec',
     twitterCreator: '@CyberNetSec',
-    twitterTitle: '', // ✅ EMPTY by design - image contains title
+    twitterTitle: article.headline, // Twitter requires this field
     twitterDescription: article.og_description || article.meta_description,
     twitterImage: ogImageUrl,
     twitterImageAlt: imageAltText,

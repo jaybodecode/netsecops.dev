@@ -9,43 +9,96 @@
     
     <!-- Main card (matches article index style) -->
     <div class="relative overflow-hidden bg-gray-900 border-2 border-purple-500/50 rounded-lg shadow-[0_0_25px_rgba(168,85,247,0.25)] w-[1140px] h-[615px]">
+      <!-- Severity Corner Ribbon - Diagonal clip at top-right corner -->
+      <!-- Larger container and wider ribbon to accommodate "CRITICAL" text -->
+      <div class="absolute top-0 right-0 z-20 overflow-hidden" style="width: 280px; height: 280px;">
+        <!-- CRITICAL -->
+        <div 
+          v-if="article.severity === 'critical'"
+          class="absolute bg-red-600/95 border-4 border-red-400"
+          style="
+            top: 60px;
+            right: -80px;
+            width: 380px;
+            transform: rotate(45deg);
+            box-shadow: 0 0 30px rgba(239, 68, 68, 0.8), 0 0 60px rgba(239, 68, 68, 0.5), inset 0 0 20px rgba(239, 68, 68, 0.3);
+          "
+        >
+          <div class="py-4 text-center">
+            <span class="text-white text-3xl font-black uppercase tracking-[0.3em] drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+              CRITICAL
+            </span>
+          </div>
+        </div>
+        
+        <!-- HIGH -->
+        <div 
+          v-else-if="article.severity === 'high'"
+          class="absolute bg-orange-600/95 border-4 border-orange-400"
+          style="
+            top: 60px;
+            right: -80px;
+            width: 380px;
+            transform: rotate(45deg);
+            box-shadow: 0 0 30px rgba(249, 115, 22, 0.8), 0 0 60px rgba(249, 115, 22, 0.5), inset 0 0 20px rgba(249, 115, 22, 0.3);
+          "
+        >
+          <div class="py-4 text-center">
+            <span class="text-white text-3xl font-black uppercase tracking-[0.3em] drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+              HIGH
+            </span>
+          </div>
+        </div>
+        
+        <!-- MEDIUM/LOW -->
+        <div 
+          v-else-if="['medium', 'low'].includes(article.severity || '')"
+          class="absolute bg-yellow-600/95 border-4 border-yellow-400"
+          style="
+            top: 60px;
+            right: -80px;
+            width: 380px;
+            transform: rotate(45deg);
+            box-shadow: 0 0 30px rgba(234, 179, 8, 0.8), 0 0 60px rgba(234, 179, 8, 0.5), inset 0 0 20px rgba(234, 179, 8, 0.3);
+          "
+        >
+          <div class="py-4 text-center">
+            <span class="text-white text-3xl font-black uppercase tracking-[0.3em] drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+              {{ article.severity?.toUpperCase() }}
+            </span>
+          </div>
+        </div>
+        
+        <!-- INFO -->
+        <div 
+          v-else-if="article.severity === 'informational'"
+          class="absolute bg-blue-600/95 border-4 border-blue-400"
+          style="
+            top: 60px;
+            right: -80px;
+            width: 380px;
+            transform: rotate(45deg);
+            box-shadow: 0 0 30px rgba(59, 130, 246, 0.8), 0 0 60px rgba(59, 130, 246, 0.5), inset 0 0 20px rgba(59, 130, 246, 0.3);
+          "
+        >
+          <div class="py-4 text-center">
+            <span class="text-white text-3xl font-black uppercase tracking-[0.3em] drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+              INFO
+            </span>
+          </div>
+        </div>
+      </div>
       <div class="flex items-stretch relative overflow-hidden h-full">
+        
         <!-- Article Content -->
-        <div class="flex-1 p-8 z-10 relative flex flex-col justify-center -mt-8">
+        <div class="flex-1 p-8 z-10 relative flex flex-col justify-center" style="margin-top: -4.5rem;">
           <!-- Title + Severity + Categories -->
-          <div class="space-y-10">
-            <!-- Title Row with Severity Badge -->
+          <div class="space-y-8">
+            <!-- Title Row -->
             <div class="flex items-start gap-6">
-              <h2 class="text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 flex-1 leading-[1.1] line-clamp-4">
+              <h2 class="text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 leading-[1.1] line-clamp-4" style="margin-top: 2px; max-width: 70%;">
                 {{ article.headline }}
               </h2>
-              
-              <!-- Severity Badge (MUCH LARGER for mobile) -->
-                            <!-- Severity Badge (MUCH LARGER for mobile) -->
-              <span
-                v-if="article.severity === 'critical'"
-                class="flex-shrink-0 px-8 py-4 bg-red-500/80 border-4 border-red-500 text-red-300 rounded-2xl text-3xl font-black uppercase tracking-wider shadow-[0_0_20px_rgba(239,68,68,0.8)] relative top-[15px] -left-[15px]"
-              >
-                CRITICAL
-              </span>
-              <span
-                v-else-if="article.severity === 'high'"
-                class="flex-shrink-0 px-8 py-4 bg-orange-500/80 border-4 border-orange-500 text-orange-300 rounded-2xl text-3xl font-black uppercase tracking-wider shadow-[0_0_20px_rgba(249,115,22,0.8)]"
-              >
-                HIGH
-              </span>
-              <span
-                v-else-if="['medium', 'low'].includes(article.severity || '')"
-                class="flex-shrink-0 px-8 py-4 bg-yellow-500/80 border-4 border-yellow-500 text-yellow-300 rounded-2xl text-3xl font-black uppercase tracking-wider shadow-[0_0_20px_rgba(234,179,8,0.8)]"
-              >
-                {{ article.severity?.toUpperCase() }}
-              </span>
-              <span
-                v-else-if="article.severity === 'informational'"
-                class="flex-shrink-0 px-8 py-4 bg-blue-500/80 border-4 border-blue-500 text-blue-300 rounded-2xl text-3xl font-black uppercase tracking-wider shadow-[0_0_20px_rgba(59,130,246,0.8)]"
-              >
-                INFO
-              </span>
             </div>
             
             <!-- Category Badges (Moved down one row, max-width 75%) -->
@@ -60,8 +113,8 @@
             </div>
           </div>
 
-          <!-- Bottom Section: Logo Only -->
-          <div class="absolute bottom-8 right-8">
+          <!-- Bottom Section: Logo Only - Slightly moved up for Twitter banner -->
+          <div class="absolute bottom-16 right-8">
             <!-- CyberNetSec.io Logo/Brand (bottom right - VERTICAL LAYOUT) -->
             <div class="flex flex-col items-center gap-3">
               <!-- Shield Icon (ABOVE logo, 2x BIGGER) -->

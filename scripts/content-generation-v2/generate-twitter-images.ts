@@ -1,36 +1,63 @@
 #!/usr/bin/env npx tsx
 
 /**
- * Generate Dynamic Twitter Card Images
+ * Generate OG Images using Playwright (Element Screenshot)
  * 
- * Creates beautiful, branded OG images for all platforms (Twitter, LinkedIn, Facebook, Google).
- * Uses Puppeteer to render Tailwind-styled HTML templates to PNG.
+ * Queries database for article slugs by date and uses Playwright to screenshot
+ * ONLY the OGImageCard Vue component for each article.
  * 
- * Image Specs:
- * - Size: 1200×675px (16:9 aspect ratio - optimal for all platforms)
- * - Format: PNG
- * - Max file size: 5MB (we're well under)
+ * Benefits:
+ * - Direct database integration (no intermediate JSON files)
+ * - Screenshots actual Vue component (pixel-perfect)
+ * - Supports multiple dates in one run
+ * - Better TypeScript support
+ * - Faster execution than Puppeteer
+ * 
+ * Prerequisites:
+ * 1. Install Playwright: npm install -D @playwright/test
+ * 2. Dev server running: npm run dev
+ * 3. Database populated: Run pipeline Steps 1-5 first
  * 
  * Usage:
- *   npx tsx scripts/content-social/generate-twitter-images.ts [options]
+ *   npx tsx scripts/content-generation-v2/generate-twitter-images.ts [options]
  * 
  * Options:
- *   --source FILE        Source tweets JSON (default: tmp/twitter/tweets.json)
- *   --output DIR         Output directory (default: public/images/og-image)
- *   --test               Generate first image only for testing
- *   --slug SLUG          Generate specific article image only
- *   --template NAME      Template to use (default: gradient-card)
+ *   -d, --date <dates>   Comma-separated dates (YYYY-MM-DD) - queries database
+ *                        Example: --date 2025-10-18 or --date 2025-10-18,2025-10-17
+ *   -s, --slug <slug>    Generate image for specific article slug
+ *   -t, --test           Generate test image using hardcoded slug (saves as test.png)
+ *   -o, --output <dir>   Output directory (default: public/images/og-image)
+ *   -u, --url <url>      Base URL of dev server (default: http://localhost:3000)
+ *   --headed             Show browser window for debugging
+ * 
+ * Examples:
+ *   # Generate images for today's articles
+ *   npx tsx scripts/content-generation-v2/generate-twitter-images.ts --date 2025-10-18
+ * 
+ *   # Generate images for multiple dates
+ *   npx tsx scripts/content-generation-v2/generate-twitter-images.ts --date 2025-10-18,2025-10-17,2025-10-16
+ * 
+ *   # Test mode (always uses same hardcoded slug)
+ *   npx tsx scripts/content-generation-v2/generate-twitter-images.ts --test
+ * 
+ *   # Specific article
+ *   npx tsx scripts/content-generation-v2/generate-twitter-images.ts --slug my-article-slug
  */
 
 import fs from 'fs';
 import path from 'path';
-import puppeteer, { Browser, Page } from 'puppeteer';
+import { chromium } from 'playwright';
+import type { Page } from 'playwright';
+import { Command } from 'commander';
+import Database from 'better-sqlite3';
 import 'dotenv/config';
 
-// Twitter image specifications
-const TWITTER_IMAGE_WIDTH = 1200;
-const TWITTER_IMAGE_HEIGHT = 675;
-const DEVICE_SCALE_FACTOR = 2; // 2x for retina quality
+// Configuration
+const IMAGE_WIDTH = 1200;
+const IMAGE_HEIGHT = 675;
+const DEFAULT_BASE_URL = 'http://localhost:3000';
+const TEST_SLUG = 'ai-risk-disclosures-surge-among-sp-500-companies-report'; // Hardcoded test slug
+const DB_PATH = 'logs/content-generation-v2.db';
 
 interface Tweet {
   slug: string;
@@ -42,294 +69,157 @@ interface Tweet {
   is_update: boolean;
 }
 
-interface ImageConfig {
-  headline: string;
-  categories: string[];
-  primaryCategory: string;
-  severity: 'critical' | 'high' | 'medium' | 'low' | 'informational';
-  entities: string[];
-  isUpdate: boolean;
-  date: string;
-}
-
-// Category icons/emojis
-const CATEGORY_ICONS: Record<string, string> = {
-  'Ransomware': '🔐',
-  'Malware': '🦠',
-  'Vulnerability': '⚠️',
-  'Data Breach': '💥',
-  'Phishing': '🎣',
-  'Cyberattack': '⚔️',
-  'Threat Actor': '🎭',
-  'Cloud Security': '☁️',
-  'Industrial Control Systems': '🏭',
-  'Policy and Compliance': '📋',
-  'Patch Management': '🔧',
-  'Security Operations': '🛡️',
-  'Incident Response': '🚨',
-  'Supply Chain Attack': '🔗',
-  'Zero Day': '0️⃣',
-  'Other': '📌',
-};
-
-// Severity color schemes
-const SEVERITY_COLORS = {
-  critical: {
-    gradient: 'from-red-600 via-red-700 to-red-900',
-    accent: 'text-red-100',
-    badge: 'bg-red-500/30 border-red-300/50',
-  },
-  high: {
-    gradient: 'from-orange-500 via-orange-600 to-orange-800',
-    accent: 'text-orange-100',
-    badge: 'bg-orange-500/30 border-orange-300/50',
-  },
-  medium: {
-    gradient: 'from-yellow-500 via-yellow-600 to-yellow-800',
-    accent: 'text-yellow-100',
-    badge: 'bg-yellow-500/30 border-yellow-300/50',
-  },
-  low: {
-    gradient: 'from-blue-500 via-blue-600 to-blue-800',
-    accent: 'text-blue-100',
-    badge: 'bg-blue-500/30 border-blue-300/50',
-  },
-  informational: {
-    gradient: 'from-slate-600 via-slate-700 to-slate-900',
-    accent: 'text-slate-100',
-    badge: 'bg-slate-500/30 border-slate-300/50',
-  },
-};
-
 /**
- * Generate HTML template for Twitter card
+ * Query database for article slugs by date(s)
  */
-function generateHTMLTemplate(config: ImageConfig): string {
-  const colors = SEVERITY_COLORS[config.severity];
-  const primaryIcon = CATEGORY_ICONS[config.primaryCategory] || '📌';
-  
-  // Truncate headline if too long (fit in 3 lines max)
-  const headline = config.headline.length > 120 
-    ? config.headline.substring(0, 117) + '...' 
-    : config.headline;
-
-  return `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { 
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-    }
-  </style>
-</head>
-<body class="m-0 p-0 overflow-hidden bg-black">
-  <!-- Main Container -->
-  <div class="relative w-[1200px] h-[675px] bg-gradient-to-br ${colors.gradient} overflow-hidden">
-    
-    <!-- Background Pattern Overlay -->
-    <div class="absolute inset-0 opacity-10">
-      <div class="absolute inset-0" style="background-image: radial-gradient(circle at 2px 2px, white 1px, transparent 0); background-size: 40px 40px;"></div>
-    </div>
-
-    <!-- Content Container -->
-    <div class="relative z-10 h-full flex flex-col justify-between p-12">
-      
-      <!-- Header -->
-      <div class="flex items-start justify-between">
-        <!-- Brand -->
-        <div class="flex items-center gap-4">
-          <div class="w-14 h-14 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center text-3xl border-2 border-white/30 shadow-xl">
-            🛡️
-          </div>
-          <div class="text-white">
-            <div class="text-2xl font-black tracking-tight">cyber.netsecops.io</div>
-            <div class="text-lg font-semibold opacity-90">Cybersecurity Intelligence</div>
-          </div>
-        </div>
-
-        <!-- Primary Category Badge -->
-        <div class="flex items-center gap-3 bg-white/15 backdrop-blur-md px-6 py-3 rounded-2xl border-2 border-white/30 shadow-xl">
-          <span class="text-4xl">${primaryIcon}</span>
-          <span class="text-white text-xl font-bold">${config.primaryCategory}</span>
-        </div>
-      </div>
-
-      <!-- Main Content Area -->
-      <div class="flex-1 flex flex-col justify-center py-8">
-        <!-- Headline -->
-        <h1 class="text-white text-6xl font-black leading-[1.15] mb-6 drop-shadow-2xl" style="text-shadow: 0 4px 20px rgba(0,0,0,0.5);">
-          ${headline}
-        </h1>
-
-        <!-- Entity Tags (Hashtags) -->
-        ${config.entities.length > 0 ? `
-          <div class="flex flex-wrap gap-3 mt-4">
-            ${config.entities.slice(0, 6).map(entity => `
-              <span class="bg-black/40 backdrop-blur-sm px-5 py-2.5 rounded-xl text-white text-xl font-bold border-2 border-white/20 shadow-lg">
-                #${entity}
-              </span>
-            `).join('')}
-          </div>
-        ` : ''}
-      </div>
-
-      <!-- Footer -->
-      <div class="flex items-end justify-between">
-        <!-- Date & Type -->
-        <div class="text-white">
-          <div class="text-xl font-semibold opacity-90">${config.date}</div>
-          ${config.isUpdate ? '<div class="text-lg font-bold text-yellow-300 mt-1">📢 UPDATE</div>' : ''}
-        </div>
-
-        <!-- Severity Badge -->
-        <div class="flex items-center gap-4">
-          ${config.categories.slice(1, 3).map(cat => {
-            const icon = CATEGORY_ICONS[cat] || '📌';
-            return `
-              <span class="bg-white/10 backdrop-blur-sm px-4 py-2 rounded-lg text-white text-base font-semibold border border-white/20">
-                ${icon} ${cat}
-              </span>
-            `;
-          }).join('')}
-          
-          <div class="bg-white/20 backdrop-blur-md px-8 py-4 rounded-2xl border-2 border-white/40 shadow-2xl">
-            <div class="text-white text-3xl font-black uppercase tracking-wider">
-              ${config.severity}
-            </div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </div>
-</body>
-</html>
-  `.trim();
-}
-
-/**
- * Extract entities (hashtags) from tweet text
- */
-function extractEntities(tweetText: string): string[] {
-  const hashtags = tweetText.match(/#\w+/g) || [];
-  return hashtags
-    .map(h => h.replace('#', ''))
-    .filter(h => h.length > 2) // Filter out very short hashtags
-    .slice(0, 6);
-}
-
-/**
- * Generate single image
- */
-async function generateImage(
-  browser: Browser,
-  tweet: Tweet,
-  outputPath: string
-): Promise<void> {
-  const page = await browser.newPage();
-
-  try {
-    // Set viewport to Twitter image size
-    await page.setViewport({
-      width: TWITTER_IMAGE_WIDTH,
-      height: TWITTER_IMAGE_HEIGHT,
-      deviceScaleFactor: DEVICE_SCALE_FACTOR,
-    });
-
-    // Build config
-    const config: ImageConfig = {
-      headline: tweet.headline,
-      categories: tweet.categories,
-      primaryCategory: tweet.primary_category,
-      severity: tweet.severity,
-      entities: extractEntities(tweet.tweet_text),
-      isUpdate: tweet.is_update,
-      date: new Date().toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric', 
-        year: 'numeric' 
-      }),
-    };
-
-    // Generate and set HTML
-    const html = generateHTMLTemplate(config);
-    await page.setContent(html, { waitUntil: 'networkidle0' });
-
-    // Take screenshot
-    await page.screenshot({
-      path: outputPath,
-      type: 'png',
-      clip: {
-        x: 0,
-        y: 0,
-        width: TWITTER_IMAGE_WIDTH,
-        height: TWITTER_IMAGE_HEIGHT,
-      },
-    });
-
-    console.log(`  ✅ ${path.basename(outputPath)}`);
-  } finally {
-    await page.close();
-  }
-}
-
-/**
- * Main function
- */
-async function main() {
-  console.log('🎨 Twitter Image Generator\n');
-
-  // Parse arguments
-  const args = process.argv.slice(2);
-  let sourceFile = 'tmp/twitter/tweets.json';
-  let outputDir = 'public/images/og-image';
-  let testMode = false;
-  let specificSlug: string | null = null;
-
-  for (let i = 0; i < args.length; i++) {
-    if (args[i] === '--source' && args[i + 1]) {
-      sourceFile = args[i + 1]!;
-      i++;
-    } else if (args[i] === '--output' && args[i + 1]) {
-      outputDir = args[i + 1]!;
-      i++;
-    } else if (args[i] === '--test') {
-      testMode = true;
-    } else if (args[i] === '--slug' && args[i + 1]) {
-      specificSlug = args[i + 1]!;
-      i++;
-    }
-  }
-
-  // Load tweets
-  if (!fs.existsSync(sourceFile)) {
-    console.error(`❌ Source file not found: ${sourceFile}`);
+function querySlugsFromDatabase(dates: string[]): string[] {
+  if (!fs.existsSync(DB_PATH)) {
+    console.error(`❌ Database not found: ${DB_PATH}`);
+    console.error('   Make sure pipeline Steps 1-5 have been run first.\n');
     process.exit(1);
   }
 
-  const tweets: Tweet[] = JSON.parse(fs.readFileSync(sourceFile, 'utf-8'));
-  console.log(`📊 Loaded ${tweets.length} tweets from ${sourceFile}\n`);
+  const db = new Database(DB_PATH, { readonly: true });
+  const slugs: string[] = [];
 
-  // Filter tweets
-  let tweetsToProcess = tweets;
-  if (specificSlug) {
-    tweetsToProcess = tweets.filter(t => t.slug === specificSlug);
-    if (tweetsToProcess.length === 0) {
-      console.error(`❌ Tweet with slug "${specificSlug}" not found`);
-      process.exit(1);
+  for (const date of dates) {
+    console.log(`📅 Querying database for NEW articles on ${date}...`);
+    
+    const rows = db.prepare(`
+      SELECT slug
+      FROM articles
+      WHERE date(created_at) = ?
+        AND resolution = 'NEW'
+      ORDER BY created_at DESC
+    `).all(date) as Array<{ slug: string }>;
+
+    const dateSlugs = rows.map(r => r.slug);
+    slugs.push(...dateSlugs);
+    
+    console.log(`   Found ${dateSlugs.length} NEW articles`);
+  }
+
+  db.close();
+
+  if (slugs.length === 0) {
+    console.error(`\n❌ No NEW articles found for the specified date(s): ${dates.join(', ')}`);
+    console.error('   Possible causes:');
+    console.error('   - Date(s) have not been processed yet (run pipeline Steps 1-5)');
+    console.error('   - All articles were marked as duplicates (SKIP-FTS5/SKIP-LLM)');
+    console.error('   - Date format is incorrect (use YYYY-MM-DD)\n');
+    process.exit(1);
+  }
+
+  console.log(`\n✅ Total: ${slugs.length} articles to process\n`);
+  return slugs;
+}
+
+/**
+ * Generate single image by screenshotting OGImageCard element
+ */
+async function generateImage(
+  page: Page,
+  slug: string,
+  baseUrl: string,
+  outputPath: string
+): Promise<void> {
+  try {
+    // Navigate to Vue preview page
+    const url = `${baseUrl}/og-image/${slug}`;
+    console.log(`  📸 Loading: ${url}`);
+    
+    await page.goto(url, {
+      waitUntil: 'networkidle',
+      timeout: 30000,
+    });
+
+    // Wait for the OG image card to be ready
+    const cardLocator = page.locator('[data-testid="og-image-card"]');
+    await cardLocator.waitFor({ state: 'visible', timeout: 10000 });
+
+    // Wait a bit for animations/fonts to settle
+    await page.waitForTimeout(500);
+
+    // Screenshot ONLY the card element (not the whole page)
+    await cardLocator.screenshot({
+      path: outputPath,
+      type: 'png',
+      // Playwright auto-detects element size, but we can verify:
+      // The card is exactly 1200x675 in the component
+    });
+
+    // Verify file was created
+    const stats = fs.statSync(outputPath);
+    const sizeKB = (stats.size / 1024).toFixed(1);
+    console.log(`  ✅ ${path.basename(outputPath)} (${sizeKB} KB)`);
+  } catch (error: any) {
+    console.error(`  ❌ Failed: ${error.message}`);
+    throw error;
+  }
+}
+
+/**
+ * Main execution
+ */
+async function main() {
+  console.log('\n🎨 OG Image Generator (Playwright Element Screenshot)\n');
+
+  // Setup commander
+  const program = new Command();
+  
+  program
+    .name('generate-twitter-images')
+    .description('Generate OG images for articles using Playwright')
+    .option('-d, --date <dates>', 'Comma-separated list of dates (YYYY-MM-DD) to query from database')
+    .option('-s, --slug <slug>', 'Generate image for a specific article slug')
+    .option('-t, --test', 'Generate test image using hardcoded test slug (saves as test.png)')
+    .option('-o, --output <dir>', 'Output directory', 'public/images/og-image')
+    .option('-u, --url <url>', 'Base URL of dev server', DEFAULT_BASE_URL)
+    .option('--headed', 'Show browser window (for debugging)', false)
+    .parse(process.argv);
+
+  const options = program.opts();
+  
+  const outputDir = options.output;
+  const baseUrl = options.url;
+  const headed = options.headed;
+  const testMode = options.test;
+  const specificSlug = options.slug;
+  const dateParam = options.date;
+
+  // Determine which slugs to process
+  let slugsToProcess: string[] = [];
+  let isTestMode = false;
+
+  if (testMode) {
+    // Test mode: use hardcoded test slug
+    slugsToProcess = [TEST_SLUG];
+    isTestMode = true;
+    console.log(`🧪 TEST MODE - Using hardcoded test slug: ${TEST_SLUG}\n`);
+  } else if (specificSlug) {
+    // Single specific slug
+    slugsToProcess = [specificSlug];
+    console.log(`� Generating image for specific slug: ${specificSlug}\n`);
+  } else if (dateParam) {
+    // Query database for slugs by date(s)
+    const dates = dateParam.split(',').map((d: string) => d.trim());
+    
+    // Validate date formats
+    for (const date of dates) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        console.error(`❌ Invalid date format: ${date}`);
+        console.error('   Expected format: YYYY-MM-DD\n');
+        process.exit(1);
+      }
     }
-  } else if (testMode) {
-    tweetsToProcess = tweets.slice(0, 1);
-    console.log('🧪 TEST MODE - Generating first image only\n');
+    
+    slugsToProcess = querySlugsFromDatabase(dates);
+  } else {
+    console.error('❌ Error: Must specify one of:');
+    console.error('   --date YYYY-MM-DD[,YYYY-MM-DD...]  (query database by date)');
+    console.error('   --slug SLUG                         (specific article)');
+    console.error('   --test                              (test mode)\n');
+    process.exit(1);
   }
 
   // Create output directory
@@ -338,45 +228,88 @@ async function main() {
     console.log(`📁 Created output directory: ${outputDir}\n`);
   }
 
-  // Launch browser once
-  console.log('🚀 Launching browser...\n');
-  const browser = await puppeteer.launch({
-    headless: 'new',
+  console.log(`🌐 Base URL: ${baseUrl}`);
+  console.log(`📸 Will generate ${slugsToProcess.length} images`);
+  console.log(`👁️  Headless: ${!headed}\n`);
+
+  // Launch browser
+  console.log('🚀 Launching Playwright (Chromium)...\n');
+  const startTime = Date.now();
+  
+  const browser = await chromium.launch({
+    headless: !headed,
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
   });
 
-  const startTime = Date.now();
+  const context = await browser.newContext({
+    viewport: { width: 1920, height: 1080 }, // Large viewport (card is 1200x675)
+    deviceScaleFactor: 2, // 2x for retina quality
+  });
 
-  // Generate images
-  console.log(`🎨 Generating ${tweetsToProcess.length} images...\n`);
-  for (let i = 0; i < tweetsToProcess.length; i++) {
-    const tweet = tweetsToProcess[i]!;
-    const outputPath = path.join(outputDir, `${tweet.slug}.png`);
-    
-    process.stdout.write(`  [${i + 1}/${tweetsToProcess.length}] ${tweet.slug}... `);
-    await generateImage(browser, tweet, outputPath);
-  }
+  const page = await context.newPage();
 
-  await browser.close();
+  try {
+    // Generate images
+    let successCount = 0;
+    let failCount = 0;
 
-  const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-  const avgTime = (parseFloat(elapsed) / tweetsToProcess.length).toFixed(1);
+    for (let i = 0; i < slugsToProcess.length; i++) {
+      const slug = slugsToProcess[i]!;
+      
+      // In test mode, save as test.png instead of {slug}.png
+      const filename = isTestMode ? 'test.png' : `${slug}.png`;
+      const outputPath = path.join(outputDir, filename);
 
-  console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('✅ GENERATION COMPLETE');
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
-  console.log(`  Total images: ${tweetsToProcess.length}`);
-  console.log(`  Output directory: ${outputDir}`);
-  console.log(`  Total time: ${elapsed}s`);
-  console.log(`  Average time: ${avgTime}s per image\n`);
+      console.log(`\n📝 [${i + 1}/${slugsToProcess.length}] ${slug}`);
+      if (isTestMode) {
+        console.log(`   📁 Output: ${filename} (test mode)`);
+      }
 
-  if (testMode) {
-    console.log('🧪 Test image generated. Check the output and then:');
-    console.log(`   - Generate all: npx tsx scripts/content-social/generate-twitter-images.ts\n`);
+      try {
+        await generateImage(page, slug, baseUrl, outputPath);
+        successCount++;
+      } catch (error) {
+        failCount++;
+        console.error(`   ❌ Generation failed`);
+      }
+
+      // Small delay between images to avoid overwhelming the server
+      if (i < slugsToProcess.length - 1) {
+        await page.waitForTimeout(200);
+      }
+    }
+
+    // Summary
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+    console.log('\n' + '═'.repeat(60));
+    console.log('📊 GENERATION COMPLETE');
+    console.log('═'.repeat(60));
+    console.log(`✅ Successfully generated: ${successCount}/${slugsToProcess.length}`);
+    console.log(`❌ Failed:                 ${failCount}/${slugsToProcess.length}`);
+    console.log(`⏱️  Total time:             ${elapsed}s`);
+    console.log(`⚡ Average per image:       ${(parseFloat(elapsed) / slugsToProcess.length).toFixed(2)}s`);
+    console.log(`📁 Output directory:       ${outputDir}`);
+    console.log('═'.repeat(60));
+
+    if (isTestMode) {
+      console.log('\n💡 Next steps:');
+      console.log('  - Review the generated test.png image');
+      console.log('  - Adjust styles in components/OGImageCard.vue if needed');
+      console.log(`  - Preview in browser: ${baseUrl}/og-image/${TEST_SLUG}`);
+      console.log('\n  Generate images for specific date(s):');
+      console.log('    npx tsx scripts/content-generation-v2/generate-twitter-images.ts --date 2025-10-18');
+      console.log('    npx tsx scripts/content-generation-v2/generate-twitter-images.ts --date 2025-10-18,2025-10-17');
+    }
+  } finally {
+    await page.close();
+    await context.close();
+    await browser.close();
   }
 }
 
+// Run the script
 main().catch(error => {
-  console.error('\n❌ Error:', error.message);
+  console.error('\n💥 Fatal error:');
+  console.error(error);
   process.exit(1);
 });

@@ -70,50 +70,46 @@
 </template>
 
 <script setup lang="ts">
-import tweets from '~/tmp/twitter/tweets.json';
-
 const route = useRoute();
 const slug = route.params.slug as string;
 
-// Find article data from static JSON (available at build time)
+// Fetch article data using the same composable as article detail page
+const { data: article, pending, error } = await useArticleBySlug(slug);
+
+// Map article to the format expected by OGImageCard
 const articleData = computed(() => {
-  const tweet = tweets.find((t: any) => t.slug === slug);
+  if (!article.value) return null;
   
-  if (!tweet) return null;
-  
-  // Map tweet data to article format
   return {
-    headline: tweet.headline,
-    title: tweet.headline, // Could be different if you have separate title field
-    severity: tweet.severity,
-    categories: tweet.categories || [],
-    createdAt: new Date().toISOString(), // Use current date or pull from article if available
-    tags: tweet.categories || [],
-    tweet_text: tweet.tweet_text,
+    headline: article.value.headline || article.value.title,
+    title: article.value.title,
+    severity: article.value.severity,
+    categories: article.value.category || [],
+    createdAt: article.value.createdAt,
+    tags: article.value.category || [],
+    tweet_text: article.value.twitter_post || article.value.headline,
   };
 });
 
-// Extract entities from tweet text
+// Extract entities from tweet text or tags
 const extractedEntities = computed(() => {
-  if (!articleData.value?.tweet_text) return [];
+  if (!articleData.value) return [];
   
-  const hashtags = articleData.value.tweet_text.match(/#\w+/g) || [];
-  const entities = hashtags.map((tag: string) => tag); // Keep the # symbol
+  const entities: string[] = [];
   
-  // Add tags if available and we need more
+  // Extract hashtags from tweet text
+  if (articleData.value.tweet_text) {
+    const hashtags = articleData.value.tweet_text.match(/#\w+/g) || [];
+    entities.push(...hashtags);
+  }
+  
+  // Add tags if we need more entities
   if (articleData.value.tags && entities.length < 8) {
     entities.push(...articleData.value.tags.slice(0, 8 - entities.length));
   }
   
   return entities.slice(0, 8);
 });
-
-// For error state
-const error = computed(() => {
-  return articleData.value ? null : new Error('Article not found in tweets.json');
-});
-
-const pending = ref(false); // No loading state for SSG
 
 const refreshData = () => {
   // Reload page for SSG

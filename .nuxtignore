@@ -1,0 +1,35 @@
+# .nuxtignore - Controls what Nuxt EXCLUDES during build
+# This is separate from .gitignore which controls Git repo sync
+# Keep this minimal - only exclude things that break the build or aren't needed
+
+# Documentation and project management files
+*.md
+!README.md
+ARCHITECTURE-*.md
+PHASE-*.md
+PIPELINE-*.md
+*-PLAN.md
+*-COMPLETE.md
+*-HANDOVER.md
+*-GUIDE.md
+*-TODO.md
+
+# Script directories (not needed in static output)
+scripts/
+.backups/
+
+# Development files
+.DS_Store
+brands.txt
+
+# Logs and temp files
+logs/
+tmp/
+*.log
+
+# Build artifacts (already handled by Nuxt)
+.output/
+.nuxt/
+node_modules/
+
+# Note: Do NOT add public/data/ here - it needs to be included in build output!
