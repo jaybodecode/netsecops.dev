@@ -9,7 +9,7 @@ import { z } from 'genkit';
 
 // Source reference schema
 export const SourceSchema = z.object({
-  url: z.string().describe("Source URL - full article URL"),
+  url: z.string().describe("CRITICAL: Ensure URL is accurate to source article. Source URL - full article URL"),
   title: z.string().describe("Source article title"),
   friendly_name: z.string().optional().describe(`Optional: FRIENDLY brand/publication name for SEO (e.g., 'The Hacker News', 'BleepingComputer', 'Unit 42', 'Cisco Talos', 'CrowdStrike', 'Mandiant', 'SecurityWeek', 'Dark Reading').
     
@@ -717,7 +717,7 @@ MARKDOWN LINKING (SEO CRITICAL - Target 10-15 total links):
     For STIX 2.1 network-traffic: Include protocol, port types with source/destination context.
     
     Generate 3-15 high-confidence observables that security teams can use for detection/hunting.`),
-  sources: z.array(SourceSchema).describe("List of source references"),
+  sources: z.array(SourceSchema).describe("CRITICAL: List sources accurately as found/used in search results. Include all source articles that were actually used to generate this article. Ensure URLs, titles, and dates match the original search results exactly."),
 
   // Events and MITRE
   events: z.array(EventSchema).describe("Chronological events if mentioned in the article"),

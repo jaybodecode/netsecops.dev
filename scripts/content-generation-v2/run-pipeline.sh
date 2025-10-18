@@ -1,10 +1,66 @@
 #!/bin/bash
 
+# ============================================================================
 # Content Generation V3 Pipeline Runner
-# Usage: ./run-pipeline.sh 2025-10-17 [OPTIONS]
+# ============================================================================
+#
+# Usage: ./run-pipeline.sh YYYY-MM-DD [OPTIONS]
+#
+# Example: ./run-pipeline.sh 2025-10-17 --start-step 3 --no-publish
 #
 # By default, starts from Step 3 (skips expensive LLM calls in Steps 1-2)
-# Use --start-step 1 or --start-step 2 to run those steps explicitly
+#
+# ============================================================================
+# PIPELINE STEPS (what actually runs):
+# ============================================================================
+#
+# Step 1: Search & Extract Raw News
+#   → npx tsx search-news.ts --date DATE
+#
+# Step 2: Generate Articles (OpenAI GPT-4)
+#   → npx tsx generate-articles.ts --date DATE
+#
+# Step 3: Insert Articles & Build FTS5 Index
+#   → npx tsx insert-articles.ts --date DATE
+#
+# Step 4: Detect Duplicates (V3 - FTS5 BM25)
+#   → npx tsx check-duplicates-v3.ts --date DATE
+#
+# Step 5: Generate Publications
+#   → npx tsx generate-publication.ts --date DATE
+#
+# Step 5.5: Regenerate Updated Article JSON
+#   → npx tsx regenerate-updated-articles.ts --date DATE
+#
+# Step 6: Export Website JSON
+#   → npx tsx generate-publication-json.ts --date DATE
+#   → npx tsx generate-article-json.ts --date DATE
+#
+# Step 7: Generate Indexes & RSS
+#   → npx tsx generate-indexes.ts
+#   → npx tsx generate-rss.ts --limit 50
+#   → npx tsx generate-threat-level.ts
+#
+# Step 8: Generate Last Updates
+#   → npx tsx generate-last-updates.ts --date DATE
+#
+# Step 8.5: Generate OG Images (Puppeteer)
+#   → npx tsx ../content-social/generate-twitter-images.ts --date DATE
+#
+# Step 9: Build Static Site
+#   → npm run generate
+#
+# Step 10: Deploy to GitHub Pages
+#   → ./scripts/deploy-to-pages.sh --yes
+#
+# ============================================================================
+# OPTIONS:
+# ============================================================================
+#   --start-step N     Start from specific step (1-10, supports 8.5)
+#   --no-publish       Skip Steps 9-10 (build & deploy)
+#   --skip-step-5.5    Skip regenerating updated articles
+#
+# ============================================================================
 
 set -e  # Exit on error
 set -o pipefail  # Catch errors in pipes
@@ -113,6 +169,7 @@ if [ -z "$DATE" ]; then
   echo "  6: Export website JSON"
   echo "  7: Generate indexes & RSS"
   echo "  8: Generate last updates"
+  echo "  8.5: Generate OG images"
   echo "  9: Build static site"
   echo "  10: Deploy to GitHub Pages"
   exit 1
@@ -146,7 +203,7 @@ fi
 echo ""
 
 # Step 1: Search Raw News (optional)
-if [ "$START_STEP" -le 1 ]; then
+if (( $(echo "$START_STEP <= 1" | bc -l) )); then
   print_step "🔍 Step 1: Searching raw news..."
   npx tsx $SCRIPTS_DIR/search-news.ts --date $DATE --logtodb
   print_success "Step 1 complete"
@@ -157,7 +214,7 @@ else
 fi
 
 # Step 2: Generate Structured Content (optional)
-if [ "$START_STEP" -le 2 ]; then
+if (( $(echo "$START_STEP <= 2" | bc -l) )); then
   print_step "🤖 Step 2: Generating structured content..."
   npx tsx $SCRIPTS_DIR/news-structured.ts --date $DATE --logtodb
   print_success "Step 2 complete"
@@ -168,7 +225,7 @@ else
 fi
 
 # Step 3: Insert Articles & Build FTS5 Index
-if [ "$START_STEP" -le 3 ]; then
+if (( $(echo "$START_STEP <= 3" | bc -l) )); then
   print_step "📥 Step 3: Inserting articles and building FTS5 index..."
   npx tsx $SCRIPTS_DIR/insert-articles.ts --date $DATE
   print_success "Step 3 complete"
@@ -176,7 +233,7 @@ if [ "$START_STEP" -le 3 ]; then
 fi
 
 # Step 4: Detect Duplicates (V3)
-if [ "$START_STEP" -le 4 ]; then
+if (( $(echo "$START_STEP <= 4" | bc -l) )); then
   print_step "🔄 Step 4: Detecting duplicates with FTS5 BM25..."
   npx tsx $SCRIPTS_DIR/check-duplicates-v3.ts --date $DATE
   print_success "Step 4 complete"
@@ -184,7 +241,7 @@ if [ "$START_STEP" -le 4 ]; then
 fi
 
 # Step 5: Generate Publications
-if [ "$START_STEP" -le 5 ]; then
+if (( $(echo "$START_STEP <= 5" | bc -l) )); then
   print_step "📰 Step 5: Generating publications..."
   npx tsx $SCRIPTS_DIR/generate-publication.ts --date $DATE
   print_success "Step 5 complete"
@@ -193,7 +250,7 @@ fi
 
 # Step 5.5: Regenerate Updated Article JSON
 # Safe to always run - will just show "No updates found" if none exist
-if [ "$START_STEP" -le 5 ]; then
+if (( $(echo "$START_STEP <= 5.5" | bc -l) )); then
   if [ "$SKIP_STEP_5_5" = true ]; then
     print_warning "Step 5.5: Skipping regeneration of updated articles (--skip-step-5.5)"
     echo ""
@@ -206,7 +263,7 @@ if [ "$START_STEP" -le 5 ]; then
 fi
 
 # Step 6: Export Website JSON
-if [ "$START_STEP" -le 6 ]; then
+if (( $(echo "$START_STEP <= 6" | bc -l) )); then
   print_step "📤 Step 6: Exporting website JSON..."
   echo "   → Generating publication JSON..."
   npx tsx $SCRIPTS_DIR/generate-publication-json.ts --date $DATE
@@ -217,7 +274,7 @@ if [ "$START_STEP" -le 6 ]; then
 fi
 
 # Step 7: Generate Indexes & RSS
-if [ "$START_STEP" -le 7 ]; then
+if (( $(echo "$START_STEP <= 7" | bc -l) )); then
   print_step "📋 Step 7: Generating indexes and RSS feed..."
   echo "   → Generating indexes..."
   npx tsx $SCRIPTS_DIR/generate-indexes.ts
@@ -230,10 +287,18 @@ if [ "$START_STEP" -le 7 ]; then
 fi
 
 # Step 8: Generate Last Updates
-if [ "$START_STEP" -le 8 ]; then
+if (( $(echo "$START_STEP <= 8" | bc -l) )); then
   print_step "🔄 Step 8: Generating last updates..."
   npx tsx $SCRIPTS_DIR/generate-last-updates.ts --date $DATE
   print_success "Step 8 complete"
+  echo ""
+fi
+
+# Step 8.5: Generate OG Images
+if (( $(echo "$START_STEP <= 8.5" | bc -l) )); then
+  print_step "🎨 Step 8.5: Generating OG images..."
+  npx tsx $SCRIPTS_DIR/../content-social/generate-twitter-images.ts --date $DATE
+  print_success "Step 8.5 complete"
   echo ""
 fi
 

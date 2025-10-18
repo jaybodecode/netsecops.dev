@@ -139,13 +139,15 @@ If issues arise, revert changes:
    // nuxt.config.ts
    modules: [
      // ... other modules
-     'nuxt-gtag',
+     // Removed: 'nuxt-gtag' - Using custom lazy loader instead
    ],
    
-   gtag: {
-     id: 'GTM-KGWKMXHP',
-     enabled: process.env.NODE_ENV === 'production',
-     loadingStrategy: 'defer',
+   // GTM now loaded via plugins/gtag-lazy.client.ts
+   // Lazy loads on user interaction or after 5 seconds
+   runtimeConfig: {
+     public: {
+       gtmId: 'GTM-NDQRG373',
+     },
    },
    ```
 

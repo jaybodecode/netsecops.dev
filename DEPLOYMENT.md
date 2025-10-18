@@ -375,7 +375,7 @@ These files in the target repository are **never overwritten**:
   - ✅ 45 pre-rendered routes
   - ✅ SEO optimization with sitemap
   - ✅ 0 build errors, 0 warnings
-  - ✅ GTM container configured (GTM-KGWKMXHP)
+  - ✅ GTM container configured (GTM-NDQRG373) - Lazy loaded via custom plugin
 
 ### Deployment Stats
 - **Build Time**: ~10 seconds

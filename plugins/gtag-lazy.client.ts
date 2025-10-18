@@ -23,8 +23,8 @@ export default defineNuxtPlugin(() => {
     return
   }
 
-  // Override with new GTM ID for same account as GA4
-  const actualGtmId = 'GTM-NDQRG373'
+  // Use GTM ID from runtime config (GTM-NDQRG373)
+  const actualGtmId = gtmId
 
   let isLoaded = false
 

@@ -21,7 +21,6 @@ export default defineNuxtConfig({
     '@nuxtjs/color-mode',
     '@nuxtjs/seo',
     '@nuxt/eslint',
-    // 'nuxt-gtag', // DISABLED: Using custom lazy loader in plugins/gtag-lazy.client.ts for better performance
   ],
 
   css: [tailwindCssPath],
@@ -92,13 +91,6 @@ export default defineNuxtConfig({
     preference: 'dark',
     fallback: 'dark',
   },
-
-  // Google Tag Manager configuration - DISABLED: Using custom lazy loader
-  // gtag: {
-  //   id: 'GTM-KGWKMXHP',
-  //   enabled: process.env.NODE_ENV === 'production',
-  //   loadingStrategy: 'defer',
-  // },
 
   // SEO configuration
   site: {
@@ -370,7 +362,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       siteUrl: 'https://cyber.netsecops.io',
-      gtmId: 'GTM-KGWKMXHP',
+      gtmId: 'GTM-NDQRG373', // Updated to match gtag-lazy.client.ts
     },
   },
 })

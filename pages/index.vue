@@ -451,3 +451,65 @@ usePageSeo({
   }
 }
 </style>
+
+<script setup lang="ts">
+// SEO Meta Tags for Homepage
+useSeoMeta({
+  title: 'Cyber Security Advisory | CyberNetSec.io',
+  description: 'Timely, reliable, and cited sources for daily cybersecurity threat intelligence, vulnerability reports, and security advisories.',
+  
+  // Open Graph (Facebook, LinkedIn)
+  ogTitle: 'Cyber Security Advisory',
+  ogDescription: 'Timely, reliable, and cited sources for daily cybersecurity threat intelligence, vulnerability reports, and security advisories.',
+  ogImage: 'https://cyber.netsecops.io/images/branding/banner.png',
+  ogImageAlt: 'CyberNetSec.io - Cybersecurity Intelligence Platform',
+  ogUrl: 'https://cyber.netsecops.io/',
+  ogType: 'website',
+  
+  // Twitter Card
+  twitterCard: 'summary_large_image',
+  twitterTitle: 'Cyber Security Advisory',
+  twitterDescription: 'Timely, reliable, and cited sources for daily cybersecurity threat intelligence, vulnerability reports, and security advisories.',
+  twitterImage: 'https://cyber.netsecops.io/images/branding/banner.png',
+  twitterImageAlt: 'CyberNetSec.io - Cybersecurity Intelligence Platform',
+  
+  // Additional SEO
+  robots: 'index, follow',
+  author: 'CyberNetSec.io',
+  keywords: 'cybersecurity, threat intelligence, vulnerability reports, security advisories, CVE, cyber threats, security news'
+})
+
+// JSON-LD Structured Data
+useHead({
+  script: [
+    {
+      type: 'application/ld+json',
+      children: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        'name': 'CyberNetSec.io',
+        'alternateName': 'Cyber Security Advisory',
+        'url': 'https://cyber.netsecops.io',
+        'description': 'Cybersecurity Threat Intelligence Platform - Daily vulnerability reports, security advisories, and threat briefings',
+        'publisher': {
+          '@type': 'Organization',
+          'name': 'CyberNetSec.io',
+          'url': 'https://cyber.netsecops.io',
+          'logo': {
+            '@type': 'ImageObject',
+            'url': 'https://cyber.netsecops.io/logo.png'
+          }
+        },
+        'potentialAction': {
+          '@type': 'SearchAction',
+          'target': {
+            '@type': 'EntryPoint',
+            'urlTemplate': 'https://cyber.netsecops.io/articles?q={search_term_string}'
+          },
+          'query-input': 'required name=search_term_string'
+        }
+      })
+    }
+  ]
+})
+</script>

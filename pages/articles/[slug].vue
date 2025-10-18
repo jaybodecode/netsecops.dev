@@ -964,14 +964,7 @@ definePageMeta({
                         <span class="text-xl font-black text-red-400">{{ cve.cvss_score }}</span>
                       </div>
                     </div>
-                    
-                    <!-- Row 3: KVE Badge (if applicable) -->
-                    <div v-if="cve.kve" class="mb-3">
-                      <span class="inline-flex items-center px-2 py-1 rounded bg-purple-500/20 border border-purple-500/30 text-purple-300 text-xs font-bold">
-                        <Icon name="heroicons:shield-exclamation-20-solid" class="w-3 h-3 mr-1" />
-                        KVE
-                      </span>
-                    </div>
+
                     
                     <!-- External Links -->
                     <div class="flex flex-wrap gap-2">
