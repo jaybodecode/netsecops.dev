@@ -51,6 +51,14 @@
       </p>
       <div class="mt-2 h-1 w-32 bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 rounded-full mx-auto"/>
       
+      <!-- Home Button (centered below decorative line) -->
+      <div v-if="showHomeButton" class="mt-6 flex justify-center">
+        <NuxtLink to="/" class="inline-flex items-center gap-2 px-4 py-2 bg-gray-900/90 border-2 border-cyan-500/50 text-cyan-400 rounded-lg font-bold uppercase tracking-wider text-sm hover:border-cyan-500 hover:shadow-[0_0_20px_rgba(34,211,238,0.4)] hover:scale-105 transition-all backdrop-blur-sm">
+          <Icon name="heroicons:home-20-solid" class="w-4 h-4" />
+          Home
+        </NuxtLink>
+      </div>
+      
       <!-- Optional slot for custom header content -->
       <slot />
     </div>
@@ -68,6 +76,7 @@ interface Props {
   subtitle?: string;
   showBadgeImage?: boolean;
   icon?: string;
+  showHomeButton?: boolean;
 }
 
 withDefaults(defineProps<Props>(), {
@@ -75,5 +84,6 @@ withDefaults(defineProps<Props>(), {
   subtitle: 'Daily Cybersecurity Threat Briefings',
   showBadgeImage: true,
   icon: 'heroicons:shield-check-20-solid',
+  showHomeButton: false,
 });
 </script>

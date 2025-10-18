@@ -13,7 +13,7 @@
         </div>
         
         <div class="absolute top-16 right-4 z-20">
-          <button @click="showEmailModal = true" class="inline-flex items-center gap-2 px-4 py-2 bg-gray-900/90 border-2 border-purple-500/50 text-purple-300 rounded-lg font-bold uppercase tracking-wider text-sm hover:border-purple-500 hover:shadow-[0_0_15px_rgba(168,85,247,0.4)] hover:scale-105 transition-all backdrop-blur-sm">
+          <button class="inline-flex items-center gap-2 px-4 py-2 bg-gray-900/90 border-2 border-purple-500/50 text-purple-300 rounded-lg font-bold uppercase tracking-wider text-sm hover:border-purple-500 hover:shadow-[0_0_15px_rgba(168,85,247,0.4)] hover:scale-105 transition-all backdrop-blur-sm" @click="showEmailModal = true">
             <Icon name="heroicons:envelope-20-solid" class="w-4 h-4" />
             Email Subscribe
           </button>
@@ -28,7 +28,7 @@
           <Icon name="heroicons:home-20-solid" class="w-4 h-4" />
           Home
         </NuxtLink>
-        <button @click="showEmailModal = true" class="inline-flex items-center gap-2 px-4 py-2 bg-gray-900/90 border-2 border-purple-500/50 text-purple-300 rounded-lg font-bold uppercase tracking-wider text-sm hover:border-purple-500 hover:shadow-[0_0_15px_rgba(168,85,247,0.4)] hover:scale-105 transition-all backdrop-blur-sm">
+        <button class="inline-flex items-center gap-2 px-4 py-2 bg-gray-900/90 border-2 border-purple-500/50 text-purple-300 rounded-lg font-bold uppercase tracking-wider text-sm hover:border-purple-500 hover:shadow-[0_0_15px_rgba(168,85,247,0.4)] hover:scale-105 transition-all backdrop-blur-sm" @click="showEmailModal = true">
           <Icon name="heroicons:envelope-20-solid" class="w-4 h-4" />
           Email Subscribe
         </button>
@@ -79,24 +79,24 @@
           </div>
           
           <div class="space-y-4">
-            <!-- All Publications Feed -->
+            <!-- All Articles Feed -->
             <CyberCard>
               <div class="p-6">
                 <div class="flex items-center gap-3 mb-4">
                   <Icon name="heroicons:document-text-20-solid" class="w-6 h-6 text-cyan-400" />
-                  <h3 class="text-xl font-bold text-white">All Publications</h3>
+                  <h3 class="text-xl font-bold text-white">All Articles</h3>
                   <CyberBadge>Updated Daily</CyberBadge>
                 </div>
                 <p class="text-gray-300 mb-4">
-                  Latest 5 publications: daily digests, weekly roundups, monthly reports, and special reports
+                  Latest articles from the past 3 days: individual threat intelligence reports, vulnerability alerts, data breach notifications, and security advisories
                 </p>
               <div class="flex gap-3 mb-3">
                 <input 
                   type="text" 
                   readonly 
                   :value="baseUrl + '/rss/all.xml'"
-                  @click="selectInput"
                   class="flex-1 px-4 py-3 bg-gray-800/50 border border-gray-700 rounded font-mono text-sm text-gray-300 cursor-pointer hover:border-cyan-500 focus:outline-none focus:border-cyan-500 transition-colors"
+                  @click="selectInput"
                 />
                 <CyberButton @click="copyFeedUrl('/rss/all.xml')">
                   {{ copiedFeed === '/rss/all.xml' ? '✓ Copied' : 'Copy' }}
@@ -109,27 +109,24 @@
               </div>
             </CyberCard>
 
-            <!-- All Articles Feed -->
+            <!-- Updated Articles Feed -->
             <CyberCard>
               <div class="p-6">
                 <div class="flex items-center gap-3 mb-4">
                   <Icon name="heroicons:document-duplicate-20-solid" class="w-6 h-6 text-purple-400" />
-                  <h3 class="text-xl font-bold text-white">All Articles</h3>
-                  <div class="flex gap-2">
-                    <CyberBadge>New</CyberBadge>
-                    <CyberBadge variant="warning">Updated</CyberBadge>
-                  </div>
+                  <h3 class="text-xl font-bold text-white">Updates only</h3>
+                  <CyberBadge>Updated Daily</CyberBadge>
                 </div>
                 <p class="text-gray-300 mb-4">
-                  All articles including newly published and recently updated threat intelligence reports
+                  20 Recently updated articles
                 </p>
                 <div class="flex gap-3 mb-3">
                   <input 
                     type="text" 
                     readonly 
                     :value="baseUrl + '/rss/updates.xml'"
-                    @click="selectInput"
                     class="flex-1 px-4 py-3 bg-gray-800/50 border border-gray-700 rounded font-mono text-sm text-gray-300 cursor-pointer hover:border-cyan-500 focus:outline-none focus:border-cyan-500 transition-colors"
+                    @click="selectInput"
                   />
                   <CyberButton @click="copyFeedUrl('/rss/updates.xml')">
                     {{ copiedFeed === '/rss/updates.xml' ? '✓ Copied' : 'Copy' }}
@@ -168,12 +165,15 @@
                     type="text" 
                     readonly 
                     :value="baseUrl + category.url"
-                    @click="selectInput"
                     class="flex-1 px-3 py-2 bg-gray-800/50 border border-gray-700 rounded font-mono text-xs text-gray-300 cursor-pointer hover:border-cyan-500 focus:outline-none focus:border-cyan-500 transition-colors"
+                    @click="selectInput"
                   />
-                  <CyberButton @click="copyFeedUrl(category.url)" size="sm">
+                  <CyberButton size="sm" @click="copyFeedUrl(category.url)">
                     {{ copiedFeed === category.url ? '✓' : 'Copy' }}
                   </CyberButton>
+                </div>
+                <div v-if="category.last_updated" class="text-xs text-gray-500">
+                  Last updated: {{ formatDate(category.last_updated) }}
                 </div>
               </div>
             </CyberCard>
@@ -266,11 +266,12 @@
                     <strong class="text-white">All feeds update before 9:30 AM CST, 7 days per week</strong>
                   </p>
                   <p class="text-sm">
-                    <strong class="text-white">All Publications</strong> includes:<br>
-                    • Daily digests (published 7 days/week)<br>
-                    • Weekly roundups<br>
-                    • Monthly reports<br>
-                    • Special reports
+                    <strong class="text-white">All Articles</strong> includes:<br/>
+                    • Latest articles from the past 3 days<br/>
+                    • Individual threat intelligence reports<br/>
+                    • Vulnerability alerts and CVE information<br/>
+                    • Data breach notifications<br/>
+                    • Security advisories and incident reports
                   </p>
                 </div>
               </details>
@@ -291,15 +292,15 @@
               
               <details class="group">
                 <summary class="cursor-pointer font-semibold text-white hover:text-cyan-400 transition-colors py-3 border-b border-gray-700 flex items-center justify-between">
-                  <span>What's the difference between publications and articles?</span>
+                  <span>What's the difference between All Articles and Updates only?</span>
                   <Icon name="heroicons:chevron-down-20-solid" class="w-5 h-5 text-cyan-400 group-open:rotate-180 transition-transform" />
                 </summary>
                 <div class="py-4 text-gray-300 leading-relaxed">
                   <p>
-                    <strong class="text-white">Publications</strong> are curated collections (like daily digests or weekly roundups) 
-                    that group multiple related articles. <strong class="text-white">Articles</strong> are individual threat intelligence 
-                    reports. The "All Publications" feed shows our curated collections, while the "All Articles" feed shows 
-                    individual articles tagged as NEW or UPDATED.
+                    <strong class="text-white">All Articles</strong> contains the latest individual threat intelligence reports from the past 3 days, 
+                    including new vulnerabilities, data breaches, malware analysis, and security incidents. <strong class="text-white">Updates only</strong> 
+                    contains articles that have been recently updated with new information, such as additional IOCs, new victims, enhanced mitigation details, 
+                    or revised severity assessments. Updated articles will have "[UPDATED]" in the title and include details about what changed.
                   </p>
                 </div>
               </details>
@@ -311,10 +312,10 @@
                 </summary>
                 <div class="py-4 text-gray-300 leading-relaxed">
                   <p>
-                    In the "All Articles" feed, each article is tagged as either <strong class="text-white">NEW</strong> (freshly published) 
+                    In the "Updates only" feed, each article is tagged as either <strong class="text-white">NEW</strong> (freshly published) 
                     or <strong class="text-white">UPDATED</strong> (existing article with new information). Updated articles will have 
                     "[UPDATED]" in the title and include details about what changed, such as new IOCs, additional victims, or 
-                    mitigation details.
+                    mitigation details. The "All Articles" feed shows the latest articles regardless of their update status.
                   </p>
                 </div>
               </details>
@@ -440,21 +441,25 @@ const copiedFeed = ref<string | null>(null)
 const showToast = ref(false)
 const showEmailModal = ref(false)
 
-// Static category feeds - these URLs don't change
+// Static category feeds with actual counts from latest generation
 const categoryFeeds = [
-  { slug: 'threat-actor', title: 'Threat Actor', description: 'Latest threat actor threat intelligence', url: '/rss/categories/threat-actor.xml' },
-  { slug: 'data-breach', title: 'Data Breach', description: 'Latest data breach threat intelligence', url: '/rss/categories/data-breach.xml' },
-  { slug: 'vulnerability', title: 'Vulnerability', description: 'Latest vulnerability threat intelligence', url: '/rss/categories/vulnerability.xml' },
-  { slug: 'ransomware', title: 'Ransomware', description: 'Latest ransomware threat intelligence', url: '/rss/categories/ransomware.xml' },
-  { slug: 'cloud-security', title: 'Cloud Security', description: 'Latest cloud security threat intelligence', url: '/rss/categories/cloud-security.xml' },
-  { slug: 'supply-chain-attack', title: 'Supply Chain Attack', description: 'Latest supply chain attack threat intelligence', url: '/rss/categories/supply-chain-attack.xml' },
-  { slug: 'malware', title: 'Malware', description: 'Latest malware threat intelligence', url: '/rss/categories/malware.xml' },
-  { slug: 'phishing', title: 'Phishing', description: 'Latest phishing threat intelligence', url: '/rss/categories/phishing.xml' },
-  { slug: 'zero-day', title: 'Zero-Day', description: 'Latest zero-day threat intelligence', url: '/rss/categories/zero-day.xml' },
-  { slug: 'apt', title: 'APT', description: 'Latest advanced persistent threat intelligence', url: '/rss/categories/apt.xml' },
-  { slug: 'ddos', title: 'DDoS', description: 'Latest DDoS attack threat intelligence', url: '/rss/categories/ddos.xml' },
-  { slug: 'insider-threat', title: 'Insider Threat', description: 'Latest insider threat intelligence', url: '/rss/categories/insider-threat.xml' },
-  { slug: 'iot-security', title: 'IoT Security', description: 'Latest IoT security threat intelligence', url: '/rss/categories/iot-security.xml' },
+  { slug: 'cloud-security', title: 'Cloud Security', description: 'Latest cloud security threat intelligence - the last 10 articles', url: '/rss/categories/cloud-security.xml', item_count: 1, article_count: 1, last_updated: '2025-10-18T13:02:01.000Z', icon: 'cloud' },
+  { slug: 'cyberattack', title: 'Cyberattack', description: 'Latest cyberattack threat intelligence - the last 10 articles', url: '/rss/categories/cyberattack.xml', item_count: 3, article_count: 3, last_updated: '2025-10-18T13:02:01.000Z', icon: 'shield-exclamation' },
+  { slug: 'data-breach', title: 'Data Breach', description: 'Latest data breach threat intelligence - the last 10 articles', url: '/rss/categories/data-breach.xml', item_count: 5, article_count: 5, last_updated: '2025-10-18T13:02:01.000Z', icon: 'exclamation-triangle' },
+  { slug: 'incident-response', title: 'Incident Response', description: 'Latest incident response threat intelligence - the last 10 articles', url: '/rss/categories/incident-response.xml', item_count: 2, article_count: 2, last_updated: '2025-10-18T13:02:01.000Z', icon: 'wrench-screwdriver' },
+  { slug: 'industrial-control-systems', title: 'Industrial Control Systems', description: 'Latest ICS/OT security threat intelligence - the last 10 articles', url: '/rss/categories/industrial-control-systems.xml', item_count: 2, article_count: 2, last_updated: '2025-10-18T13:02:01.000Z', icon: 'cog' },
+  { slug: 'malware', title: 'Malware', description: 'Latest malware threat intelligence - the last 10 articles', url: '/rss/categories/malware.xml', item_count: 3, article_count: 3, last_updated: '2025-10-18T13:02:01.000Z', icon: 'bug' },
+  { slug: 'mobile-security', title: 'Mobile Security', description: 'Latest mobile security threat intelligence - the last 10 articles', url: '/rss/categories/mobile-security.xml', item_count: 4, article_count: 4, last_updated: '2025-10-18T13:02:01.000Z', icon: 'device-phone-mobile' },
+  { slug: 'patch-management', title: 'Patch Management', description: 'Latest patch management threat intelligence - the last 10 articles', url: '/rss/categories/patch-management.xml', item_count: 3, article_count: 3, last_updated: '2025-10-18T13:02:01.000Z', icon: 'wrench' },
+  { slug: 'phishing', title: 'Phishing', description: 'Latest phishing threat intelligence - the last 10 articles', url: '/rss/categories/phishing.xml', item_count: 1, article_count: 1, last_updated: '2025-10-18T13:02:01.000Z', icon: 'envelope' },
+  { slug: 'policy-and-compliance', title: 'Policy & Compliance', description: 'Latest policy and compliance threat intelligence - the last 10 articles', url: '/rss/categories/policy-and-compliance.xml', item_count: 2, article_count: 2, last_updated: '2025-10-18T13:02:01.000Z', icon: 'document-text' },
+  { slug: 'ransomware', title: 'Ransomware', description: 'Latest ransomware threat intelligence - the last 10 articles', url: '/rss/categories/ransomware.xml', item_count: 3, article_count: 3, last_updated: '2025-10-18T13:02:01.000Z', icon: 'lock-closed' },
+  { slug: 'regulatory', title: 'Regulatory', description: 'Latest regulatory threat intelligence - the last 10 articles', url: '/rss/categories/regulatory.xml', item_count: 4, article_count: 4, last_updated: '2025-10-18T13:02:01.000Z', icon: 'scale' },
+  { slug: 'security-operations', title: 'Security Operations', description: 'Latest security operations threat intelligence - the last 10 articles', url: '/rss/categories/security-operations.xml', item_count: 5, article_count: 5, last_updated: '2025-10-18T13:02:01.000Z', icon: 'shield-check' },
+  { slug: 'supply-chain-attack', title: 'Supply Chain Attack', description: 'Latest supply chain attack threat intelligence - the last 10 articles', url: '/rss/categories/supply-chain-attack.xml', item_count: 6, article_count: 6, last_updated: '2025-10-18T13:02:01.000Z', icon: 'link' },
+  { slug: 'threat-actor', title: 'Threat Actor', description: 'Latest threat actor intelligence - the last 10 articles', url: '/rss/categories/threat-actor.xml', item_count: 3, article_count: 3, last_updated: '2025-10-18T13:02:01.000Z', icon: 'user-group' },
+  { slug: 'threat-intelligence', title: 'Threat Intelligence', description: 'Latest threat intelligence reports - the last 10 articles', url: '/rss/categories/threat-intelligence.xml', item_count: 1, article_count: 1, last_updated: '2025-10-18T13:02:01.000Z', icon: 'eye' },
+  { slug: 'vulnerability', title: 'Vulnerability', description: 'Latest vulnerability threat intelligence - the last 10 articles', url: '/rss/categories/vulnerability.xml', item_count: 4, article_count: 4, last_updated: '2025-10-18T13:02:01.000Z', icon: 'exclamation-circle' },
 ]
 
 // Load feed metadata
@@ -464,7 +469,7 @@ const copyFeedUrl = async (url: string) => {
   const fullUrl = baseUrl + url
   
   // Track RSS feed copy in Google Tag Manager
-  if (process.client && window.dataLayer) {
+  if (import.meta.client && window.dataLayer) {
     const feedName = url.split('/').pop()?.replace('.xml', '') || 'unknown'
     const feedType = url.includes('/categories/') ? 'category' : 'main'
     

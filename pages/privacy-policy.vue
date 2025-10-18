@@ -9,12 +9,14 @@
 
     <!-- Layout -->
     <NuxtLayout name="cyber">
+      <!-- Header -->
+      <CyberHeader 
+        title="Privacy Policy"
+        subtitle="How we collect, use, and protect your personal information"
+        :showHomeButton="true"
+      />
+
       <div class="container mx-auto px-4 py-12 max-w-4xl">
-        <!-- Header -->
-        <CyberHeader 
-          title="Privacy Policy"
-          subtitle="How we collect, use, and protect your personal information"
-        />
 
         <!-- Content -->
         <div class="mt-12 prose prose-invert prose-purple max-w-none">

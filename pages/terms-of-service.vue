@@ -9,12 +9,14 @@
 
     <!-- Layout -->
     <NuxtLayout name="cyber">
+      <!-- Header -->
+      <CyberHeader 
+        title="Terms of Service"
+        subtitle="Legal Terms & Conditions"
+        :showHomeButton="true"
+      />
+
       <div class="container mx-auto px-4 py-12 max-w-4xl">
-        <!-- Header -->
-        <CyberHeader 
-          title="Terms of Service"
-          subtitle="Legal terms and conditions for using our cybersecurity intelligence platform"
-        />
 
         <!-- Content -->
         <div class="mt-12 prose prose-invert prose-purple max-w-none">
@@ -213,7 +215,7 @@
               
               <h3 class="text-xl font-semibold text-purple-400 mb-3">12.1 Informal Resolution</h3>
               <p class="text-gray-300 mb-4">
-                Before filing any formal dispute, you agree to first contact us at <span class="text-cyan-400">legal</span><span class="text-gray-500">&#64;</span><span class="text-cyan-400">sharefront.net</span> to attempt to resolve the matter informally. We will respond within 30 days.
+                Before filing any formal dispute, you agree to first contact us at <span class="text-cyan-400">cyber</span><span class="text-gray-500">&#64;</span><span class="text-cyan-400">sharefront.net</span> to attempt to resolve the matter informally. We will respond within 30 days.
               </p>
 
               <h3 class="text-xl font-semibold text-purple-400 mb-3">12.2 Binding Arbitration</h3>
@@ -262,15 +264,9 @@
               </p>
               
               <div class="bg-gray-800/50 rounded-lg p-6 border border-gray-700">
-                <h3 class="text-lg font-semibold text-purple-400 mb-3">Legal Department</h3>
+                <h3 class="text-lg font-semibold text-purple-400 mb-3">Contact Us</h3>
                 <div class="space-y-2 text-gray-300">
-                  <p><strong>Email:</strong> <span class="text-cyan-400">legal</span><span class="text-gray-500">&#64;</span><span class="text-cyan-400">sharefront.net</span></p>
-                </div>
-                
-                <div class="mt-4 pt-4 border-t border-gray-700">
-                  <p class="text-sm text-gray-400">
-                    For urgent security-related matters, please contact <span class="text-cyan-400">security</span><span class="text-gray-500">&#64;</span><span class="text-cyan-400">sharefront.net</span>
-                  </p>
+                  <p><strong>Email:</strong> <span class="text-cyan-400">cyber</span><span class="text-gray-500">&#64;</span><span class="text-cyan-400">sharefront.net</span></p>
                 </div>
               </div>
             </section>

@@ -122,6 +122,66 @@
             </button>
           </NuxtLink>
         </div>
+
+        <!-- Trust Signal Links - Smaller, Centered -->
+        <div class="flex justify-center items-center gap-3 mt-4 flex-wrap">
+          <!-- Contact Us -->
+          <NuxtLink to="/contact-us">
+            <button 
+              class="inline-flex items-center gap-2 px-4 py-2 
+                     bg-gray-800/50 
+                     border border-gray-600 
+                     text-gray-400 font-semibold text-sm rounded-lg uppercase
+                     hover:bg-gray-700/50 hover:border-cyan-500/50 hover:text-cyan-400
+                     hover:shadow-[0_0_15px_rgba(34,211,238,0.3)]
+                     transition-all duration-200"
+            >
+              <Icon 
+                name="heroicons:envelope-20-solid" 
+                class="w-4 h-4"
+              />
+              <span>Contact Us</span>
+            </button>
+          </NuxtLink>
+          
+          <!-- About Us -->
+          <NuxtLink to="/about-us">
+            <button 
+              class="inline-flex items-center gap-2 px-4 py-2 
+                     bg-gray-800/50 
+                     border border-gray-600 
+                     text-gray-400 font-semibold text-sm rounded-lg uppercase
+                     hover:bg-gray-700/50 hover:border-gray-500 hover:text-gray-300
+                     hover:shadow-[0_0_15px_rgba(156,163,175,0.3)]
+                     transition-all duration-200"
+            >
+              <Icon 
+                name="heroicons:information-circle-20-solid" 
+                class="w-4 h-4"
+              />
+              <span>About Us</span>
+            </button>
+          </NuxtLink>
+          
+          <!-- Editorial Policy -->
+          <NuxtLink to="/editorial-policy">
+            <button 
+              class="inline-flex items-center gap-2 px-4 py-2 
+                     bg-gray-800/50 
+                     border border-gray-600 
+                     text-gray-400 font-semibold text-sm rounded-lg uppercase
+                     hover:bg-gray-700/50 hover:border-purple-500/50 hover:text-purple-400
+                     hover:shadow-[0_0_15px_rgba(168,85,247,0.3)]
+                     transition-all duration-200"
+            >
+              <Icon 
+                name="heroicons:document-text-20-solid" 
+                class="w-4 h-4"
+              />
+              <span>Editorial Policy</span>
+            </button>
+          </NuxtLink>
+        </div>
       </div>
 
       <div class="container mx-auto px-4 py-8 max-w-6xl">

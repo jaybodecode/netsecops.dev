@@ -25,9 +25,12 @@
 
 import { getDB } from './database/index.js';
 import type { Publication } from './database/schema-publications.js';
-import { existsSync, mkdirSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, writeFileSync, readFileSync, readdirSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
+
+// Import ArticleCategory enum for consistent categories
+import type { ArticleCategory } from '../../types/cyber.js';
 
 // Get the directory of this script file
 const __filename = fileURLToPath(import.meta.url);
@@ -38,7 +41,7 @@ const __dirname = dirname(__filename);
 const DEFAULT_OUTPUT_DIR = join(__dirname, '..', '..', 'public');
 
 // Base URL for links (should match your production site)
-const BASE_URL = 'https://cybernetsec.io';
+const BASE_URL = 'https://cyber.netsecops.io';
 
 /**
  * CLI arguments
@@ -80,7 +83,10 @@ function parseArgs(): Args {
     const arg = process.argv[i];
     
     if (arg === '--limit' && i + 1 < process.argv.length) {
-      args.limit = parseInt(process.argv[++i], 10);
+      const limitStr = process.argv[++i];
+      if (limitStr) {
+        args.limit = parseInt(limitStr, 10);
+      }
     } else if (arg === '--output' && i + 1 < process.argv.length) {
       args.outputDir = process.argv[++i];
     }
@@ -139,34 +145,110 @@ ${itemsXML}
 }
 
 /**
- * Get publications for RSS
+ * Get articles from the last 3 days
  */
-function getPublications(limit?: number, type?: string): Publication[] {
+function getRecentArticles(limit?: number): any[] {
   const db = getDB();
   
-  let sql = `
-    SELECT * FROM publications
-    WHERE 1=1
+  const sql = `
+    SELECT a.*, JSON_EXTRACT(a.category, '$') as categories
+    FROM articles a
+    WHERE a.pub_date >= date('now', '-3 days')
+    AND a.resolution = 'NEW'
+    ORDER BY a.pub_date DESC
   `;
   
-  const params: any[] = [];
+  const stmt = db.prepare(limit ? sql + ` LIMIT ?` : sql);
+  const results = limit ? stmt.all(limit) : stmt.all();
   
-  if (type) {
-    // Future: filter by type (daily, weekly, monthly)
-    // For now, we'll extract from slug pattern
-    sql += ` AND slug LIKE ?`;
-    params.push(`%${type}%`);
-  }
+  // Parse categories from JSON and add severity
+  return results.map((row: any) => ({
+    ...row,
+    categories: JSON.parse(row.categories || '[]'),
+    severity: row.severity || 'informational'
+  }));
+}
+
+/**
+ * Get articles by category (last 10 articles by updated_at)
+ */
+function getArticlesByCategory(category: ArticleCategory, limit?: number): any[] {
+  const db = getDB();
   
-  sql += ` ORDER BY pub_date DESC`;
+  const sql = `
+    SELECT a.*, JSON_EXTRACT(a.category, '$') as categories
+    FROM articles a
+    WHERE a.resolution = 'NEW'
+    AND a.category LIKE '%"${category}"%'
+    ORDER BY a.updated_at DESC
+  `;
   
-  if (limit !== undefined) {
-    sql += ` LIMIT ?`;
-    params.push(limit);
-  }
+  const stmt = db.prepare(limit ? sql + ` LIMIT ?` : sql);
+  const results = limit ? stmt.all(limit) : stmt.all();
   
-  const stmt = db.prepare(sql);
-  return stmt.all(...params) as Publication[];
+  // Parse categories from JSON and add severity
+  return results.map((row: any) => ({
+    ...row,
+    categories: JSON.parse(row.categories || '[]'),
+    severity: row.severity || 'informational'
+  }));
+}
+
+/**
+ * Get updated articles (isUpdate = 1)
+ */
+function getUpdatedArticles(limit?: number): any[] {
+  const db = getDB();
+  
+  const sql = `
+    SELECT a.*, JSON_EXTRACT(a.category, '$') as categories
+    FROM articles a
+    WHERE a.isUpdate = 1
+    ORDER BY a.updated_at DESC
+  `;
+  
+  const stmt = db.prepare(limit ? sql + ` LIMIT ?` : sql);
+  const results = limit ? stmt.all(limit) : stmt.all();
+  
+  // Parse categories from JSON and add severity
+  return results.map((row: any) => ({
+    ...row,
+    categories: JSON.parse(row.categories || '[]'),
+    severity: row.severity || 'informational'
+  }));
+}
+
+/**
+ * Get all articles from the last day (both NEW and UPDATE)
+ */
+function getLastDayArticles(limit?: number): any[] {
+  const db = getDB();
+  
+  const sql = `
+    SELECT a.*, 
+           JSON_EXTRACT(a.category, '$') as categories
+    FROM articles a
+    WHERE date(a.updated_at) >= date('now', '-1 day')
+    ORDER BY a.updated_at DESC
+  `;
+  
+  const stmt = db.prepare(limit ? sql + ` LIMIT ?` : sql);
+  const results = limit ? stmt.all(limit) : stmt.all();
+  
+  // Parse categories and enrich with structured_news data
+  return results.map((row: any) => {
+    const meta = findArticleMetaInStructuredNews(row.id);
+    
+    return {
+      ...row,
+      categories: JSON.parse(row.categories || '[]'),
+      entities: meta?.entities || {},
+      impact_scope: meta?.impact_scope || {},
+      source_url: meta?.source_url || '',
+      severity: row.severity || 'informational',
+      isNew: row.isUpdate !== 1
+    };
+  });
 }
 
 /**
@@ -204,6 +286,9 @@ function getPublicationArticlesWithCategories(publicationId: string): Array<{
 function findArticleMetaInStructuredNews(articleId: string): {
   severity: string;
   category: string[];
+  entities?: any;
+  impact_scope?: any;
+  source_url?: string;
 } | null {
   const db = getDB();
   
@@ -221,7 +306,10 @@ function findArticleMetaInStructuredNews(articleId: string): {
       if (article) {
         return {
           severity: article.severity,
-          category: article.category
+          category: article.category,
+          entities: article.entities || {},
+          impact_scope: article.impact_scope || {},
+          source_url: article.source_url || article.url || ''
         };
       }
     } catch (error) {
@@ -233,139 +321,464 @@ function findArticleMetaInStructuredNews(articleId: string): {
 }
 
 /**
- * Format publication description for RSS
+ * Format article description for RSS
  */
-function formatPublicationDescription(pub: Publication, articles: Array<{ severity: string; categories: string[] }>): string {
-  let html = `<p>${escapeXML(pub.summary.substring(0, 300))}${pub.summary.length > 300 ? '...' : ''}</p>`;
+function formatArticleDescription(article: any): string {
+  let html = `<p>${escapeXML(article.summary.substring(0, 300))}${article.summary.length > 300 ? '...' : ''}</p>`;
   
-  // Add article count and severity breakdown
-  const severityCounts = {
-    critical: articles.filter(a => a.severity === 'critical').length,
-    high: articles.filter(a => a.severity === 'high').length,
-    medium: articles.filter(a => a.severity === 'medium').length,
-    low: articles.filter(a => a.severity === 'low').length
-  };
+  // Add severity and categories
+  const severity = article.severity || 'informational';
+  const categories = article.categories || [];
   
-  html += `<p><strong>${pub.article_count} Articles:</strong> `;
-  const parts = [];
-  if (severityCounts.critical > 0) parts.push(`${severityCounts.critical} Critical`);
-  if (severityCounts.high > 0) parts.push(`${severityCounts.high} High`);
-  if (severityCounts.medium > 0) parts.push(`${severityCounts.medium} Medium`);
-  if (severityCounts.low > 0) parts.push(`${severityCounts.low} Low`);
-  html += parts.join(', ') + '</p>';
+  html += `<p><strong>Severity:</strong> ${severity.charAt(0).toUpperCase() + severity.slice(1)}</p>`;
   
-  html += `<p><a href="${BASE_URL}/publications/${pub.slug}">Read Full Publication →</a></p>`;
+  if (categories.length > 0) {
+    html += `<p><strong>Categories:</strong> ${categories.join(', ')}</p>`;
+  }
+  
+  html += `<p><a href="${BASE_URL}/articles/${article.slug}">Read Full Article →</a></p>`;
   
   return html;
 }
 
 /**
- * Get unique categories from all publications
+ * Format enhanced article description for last.xml feed
  */
-function getAllCategories(): string[] {
-  const db = getDB();
+function formatEnhancedArticleDescription(article: any): string {
+  let html = '';
   
-  const publications = db.prepare(`
-    SELECT id FROM publications
-  `).all() as Array<{ id: string }>;
-  
-  const categorySet = new Set<string>();
-  
-  for (const pub of publications) {
-    const articles = getPublicationArticlesWithCategories(pub.id);
-    articles.forEach(article => {
-      article.categories.forEach(cat => categorySet.add(cat));
-    });
+  // Add headline (if different from title)
+  if (article.headline && article.headline !== article.title) {
+    html += `<p><strong>Headline:</strong> ${escapeXML(article.headline)}</p>`;
   }
   
-  return Array.from(categorySet).sort();
+  // Add summary
+  html += `<p><strong>Summary:</strong><br/>${escapeXML(article.summary)}</p>`;
+  
+  // Add article metadata
+  const severity = article.severity || 'informational';
+  const categories = article.categories || [];
+  
+  html += `<p><strong>Severity:</strong> ${severity.charAt(0).toUpperCase() + severity.slice(1)}</p>`;
+  
+  if (categories.length > 0) {
+    html += `<p><strong>Categories:</strong> ${categories.join(', ')}</p>`;
+  }
+  
+  // Add article type if available
+  if (article.article_type) {
+    html += `<p><strong>Article Type:</strong> ${escapeXML(article.article_type)}</p>`;
+  }
+  
+  // Add keywords if available
+  if (article.keywords) {
+    try {
+      const keywords = typeof article.keywords === 'string' ? JSON.parse(article.keywords) : article.keywords;
+      if (Array.isArray(keywords) && keywords.length > 0) {
+        html += `<p><strong>Keywords:</strong> ${keywords.map(k => escapeXML(k)).join(', ')}</p>`;
+      }
+    } catch (e) {
+      // Skip if keywords parsing fails
+    }
+  }
+  
+  // Add reading time if available
+  if (article.reading_time_minutes) {
+    html += `<p><strong>Reading Time:</strong> ${article.reading_time_minutes} minute${article.reading_time_minutes !== 1 ? 's' : ''}</p>`;
+  }
+  
+  // Add entities if available
+  if (article.entities && Object.keys(article.entities).length > 0) {
+    const entities = article.entities;
+    const entityParts: string[] = [];
+    
+    if (entities.malware?.length > 0) {
+      entityParts.push(`Malware: ${entities.malware.map((m: string) => escapeXML(m)).join(', ')}`);
+    }
+    if (entities.threat_actors?.length > 0) {
+      entityParts.push(`Threat Actors: ${entities.threat_actors.map((t: string) => escapeXML(t)).join(', ')}`);
+    }
+    if (entities.vulnerabilities?.length > 0) {
+      entityParts.push(`Vulnerabilities: ${entities.vulnerabilities.map((v: string) => escapeXML(v)).join(', ')}`);
+    }
+    if (entities.affected_products?.length > 0) {
+      entityParts.push(`Affected Products: ${entities.affected_products.map((p: string) => escapeXML(p)).join(', ')}`);
+    }
+    if (entities.companies?.length > 0) {
+      entityParts.push(`Companies: ${entities.companies.map((c: string) => escapeXML(c)).join(', ')}`);
+    }
+    if (entities.threat_groups?.length > 0) {
+      entityParts.push(`Threat Groups: ${entities.threat_groups.map((g: string) => escapeXML(g)).join(', ')}`);
+    }
+    
+    if (entityParts.length > 0) {
+      html += `<p><strong>Entities:</strong><br/>${entityParts.join('<br/>')}</p>`;
+    }
+  }
+  
+  // Add impact scope if available
+  if (article.impact_scope && Object.keys(article.impact_scope).length > 0) {
+    const scope = article.impact_scope;
+    const scopeParts: string[] = [];
+    
+    if (scope.industries?.length > 0) {
+      scopeParts.push(`Industries: ${scope.industries.map((i: string) => escapeXML(i)).join(', ')}`);
+    }
+    if (scope.regions?.length > 0) {
+      scopeParts.push(`Regions: ${scope.regions.map((r: string) => escapeXML(r)).join(', ')}`);
+    }
+    if (scope.attack_vectors?.length > 0) {
+      scopeParts.push(`Attack Vectors: ${scope.attack_vectors.map((v: string) => escapeXML(v)).join(', ')}`);
+    }
+    if (scope.affected_systems?.length > 0) {
+      scopeParts.push(`Affected Systems: ${scope.affected_systems.map((s: string) => escapeXML(s)).join(', ')}`);
+    }
+    
+    if (scopeParts.length > 0) {
+      html += `<p><strong>Impact Scope:</strong><br/>${scopeParts.join('<br/>')}</p>`;
+    }
+  }
+  
+  // Add source URL if available
+  if (article.source_url) {
+    html += `<p><strong>Source URL:</strong> <a href="${escapeXML(article.source_url)}">${escapeXML(article.source_url)}</a></p>`;
+  }
+  
+  // Add metadata description if available
+  if (article.meta_description && article.meta_description !== article.summary) {
+    html += `<p><strong>Meta Description:</strong> ${escapeXML(article.meta_description)}</p>`;
+  }
+  
+  // Add slug for reference
+  html += `<p><strong>Article Slug:</strong> ${escapeXML(article.slug)}</p>`;
+  
+  // Add dates
+  html += `<p><strong>Published Date:</strong> ${article.pub_date ? new Date(article.pub_date).toUTCString() : 'N/A'}</p>`;
+  html += `<p><strong>Created Date:</strong> ${new Date(article.created_at).toUTCString()}</p>`;
+  html += `<p><strong>Updated Date:</strong> ${new Date(article.updated_at).toUTCString()}</p>`;
+  
+  // Add update information if this is an update
+  if (article.isUpdate === 1) {
+    html += `<p><strong>Update Count:</strong> ${article.updateCount || 1}</p>`;
+    if (article.updates) {
+      try {
+        const updates = typeof article.updates === 'string' ? JSON.parse(article.updates) : article.updates;
+        if (Array.isArray(updates) && updates.length > 0) {
+          html += `<p><strong>Update History:</strong> ${updates.length} update${updates.length !== 1 ? 's' : ''} recorded</p>`;
+        }
+      } catch (e) {
+        // Skip if updates parsing fails
+      }
+    }
+  }
+  
+  html += `<p><a href="${BASE_URL}/articles/${article.slug}">Read Full Article →</a></p>`;
+  
+  return html;
 }
 
 /**
- * Generate main RSS feed (all publications)
+ * Get all categories from schema enum (consistent with frontend)
+ */
+function getAllCategories(): ArticleCategory[] {
+  return [
+    'Ransomware',
+    'Malware',
+    'Threat Actor',
+    'Vulnerability',
+    'Data Breach',
+    'Phishing',
+    'Supply Chain Attack',
+    'Cyberattack',
+    'Industrial Control Systems',
+    'Cloud Security',
+    'Mobile Security',
+    'IoT Security',
+    'Patch Management',
+    'Threat Intelligence',
+    'Incident Response',
+    'Security Operations',
+    'Policy and Compliance',
+    'Regulatory',
+    'Other'
+  ];
+}
+
+/**
+ * Generate metadata.json file with feed information
+ */
+async function generateMetadataFile(outputDir: string): Promise<void> {
+  console.log('\n📋 Generating RSS metadata file...');
+  
+  const now = new Date().toISOString();
+  const rssDir = join(outputDir, 'rss');
+  
+  // Read existing feeds to get actual counts
+  const allFeedPath = join(rssDir, 'all.xml');
+  const updatesFeedPath = join(rssDir, 'updates.xml');
+  const lastFeedPath = join(rssDir, 'last.xml');
+  
+  let allItemCount = 0;
+  let updatesItemCount = 0;
+  let lastItemCount = 0;
+  
+  // Count items in all.xml
+  if (existsSync(allFeedPath)) {
+    const allContent = readFileSync(allFeedPath, 'utf-8');
+    const allMatches = allContent.match(/<item>/g);
+    allItemCount = allMatches ? allMatches.length : 0;
+  }
+  
+  // Count items in updates.xml
+  if (existsSync(updatesFeedPath)) {
+    const updatesContent = readFileSync(updatesFeedPath, 'utf-8');
+    const updatesMatches = updatesContent.match(/<item>/g);
+    updatesItemCount = updatesMatches ? updatesMatches.length : 0;
+  }
+  
+  // Count items in last.xml
+  if (existsSync(lastFeedPath)) {
+    const lastContent = readFileSync(lastFeedPath, 'utf-8');
+    const lastMatches = lastContent.match(/<item>/g);
+    lastItemCount = lastMatches ? lastMatches.length : 0;
+  }
+  
+  // Get category feed information
+  const categoriesDir = join(rssDir, 'categories');
+  const categoryFeeds = [];
+  
+  if (existsSync(categoriesDir)) {
+    const categoryFiles = readdirSync(categoriesDir).filter(file => file.endsWith('.xml'));
+    
+    for (const file of categoryFiles) {
+      const filePath = join(categoriesDir, file);
+      const content = readFileSync(filePath, 'utf-8');
+      const matches = content.match(/<item>/g);
+      const itemCount = matches ? matches.length : 0;
+      
+      // Convert filename to slug (remove .xml)
+      const slug = file.replace('.xml', '');
+      
+      // Get title from the categories enum
+      const category = getAllCategories().find(cat => 
+        cat.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') === slug
+      );
+      
+      if (category) {
+        categoryFeeds.push({
+          slug,
+          title: category,
+          description: `Latest ${category.toLowerCase()} threat intelligence - the last 10 articles`,
+          url: `/rss/categories/${file}`,
+          full_url: `${BASE_URL}/rss/categories/${file}`,
+          item_count: itemCount,
+          article_count: itemCount,
+          last_updated: now,
+          icon: getCategoryIcon(category)
+        });
+      }
+    }
+  }
+  
+  const metadata = {
+    generated_at: now,
+    feeds: {
+      all: {
+        title: 'CyberNetSec - Latest Cybersecurity Articles',
+        description: 'Latest cybersecurity threat intelligence articles from the past 3 days',
+        url: '/rss/all.xml',
+        full_url: `${BASE_URL}/rss/all.xml`,
+        item_count: allItemCount,
+        last_updated: now,
+        update_frequency: 'Daily'
+      },
+      updates: {
+        title: 'Updates only',
+        description: '20 Recently updated articles',
+        url: '/rss/updates.xml',
+        full_url: `${BASE_URL}/rss/updates.xml`,
+        item_count: updatesItemCount,
+        last_updated: now,
+        update_frequency: 'Daily'
+      },
+      last: {
+        title: 'Last Day - NEW & UPDATE',
+        description: 'All NEW and UPDATE articles from the last day with enhanced metadata',
+        url: '/rss/last.xml',
+        full_url: `${BASE_URL}/rss/last.xml`,
+        item_count: lastItemCount,
+        last_updated: now,
+        update_frequency: 'Daily'
+      },
+      categories: categoryFeeds
+    },
+    statistics: {
+      total_feeds: 3 + categoryFeeds.length,
+      total_articles: allItemCount,
+      total_publications: 0,
+      categories_count: categoryFeeds.length,
+      last_pipeline_run: now
+    }
+  };
+  
+  const metadataPath = join(rssDir, 'metadata.json');
+  writeFileSync(metadataPath, JSON.stringify(metadata, null, 2), 'utf-8');
+  
+  console.log(`   ✅ Written to: ${metadataPath}`);
+  console.log(`   📊 ${categoryFeeds.length} categories, ${allItemCount} total articles`);
+}
+
+/**
+ * Get icon for category
+ */
+function getCategoryIcon(category: string): string {
+  const iconMap: Record<string, string> = {
+    'Ransomware': 'lock-closed',
+    'Malware': 'bug',
+    'Threat Actor': 'user-group',
+    'Vulnerability': 'exclamation-circle',
+    'Data Breach': 'exclamation-triangle',
+    'Phishing': 'envelope',
+    'Supply Chain Attack': 'link',
+    'Cyberattack': 'shield-exclamation',
+    'Industrial Control Systems': 'cog',
+    'Cloud Security': 'cloud',
+    'Mobile Security': 'device-phone-mobile',
+    'IoT Security': 'chip',
+    'Patch Management': 'wrench',
+    'Threat Intelligence': 'eye',
+    'Incident Response': 'wrench-screwdriver',
+    'Security Operations': 'shield-check',
+    'Policy and Compliance': 'document-text',
+    'Regulatory': 'scale',
+    'Other': 'question-mark-circle'
+  };
+  
+  return iconMap[category] || 'tag';
+}
+
+/**
+ * Generate main RSS feed (all articles from last 3 days)
  */
 async function generateMainFeed(outputDir: string, limit?: number): Promise<void> {
   console.log('\n📰 Generating main RSS feed...');
   
-  const publications = getPublications(limit);
-  console.log(`   Found ${publications.length} publications`);
+  const articles = getRecentArticles(limit || 30);
+  console.log(`   Found ${articles.length} articles from last 3 days`);
   
   const items: RSSItem[] = [];
   
-  for (const pub of publications) {
-    const articles = getPublicationArticlesWithCategories(pub.id);
-    const categories = Array.from(
-      new Set(articles.flatMap(a => a.categories))
-    );
-    
+  for (const article of articles) {
     items.push({
-      title: pub.headline,
-      link: `${BASE_URL}/publications/${pub.slug}`,
-      guid: `${BASE_URL}/publications/${pub.slug}`,
-      pubDate: new Date(pub.pub_date).toUTCString(),
-      description: formatPublicationDescription(pub, articles),
-      categories: categories
+      title: article.headline,
+      link: `${BASE_URL}/articles/${article.slug}`,
+      guid: `${BASE_URL}/articles/${article.slug}`,
+      pubDate: new Date(article.pub_date).toUTCString(),
+      description: formatArticleDescription(article),
+      categories: article.categories
     });
   }
   
   const xml = generateRSSXML({
-    title: 'CyberNetSec - Cyber Threat Intelligence',
+    title: 'CyberNetSec - Latest Cybersecurity Articles',
     link: BASE_URL,
-    description: 'Daily cybersecurity threat intelligence and analysis',
+    description: 'Latest cybersecurity threat intelligence articles from the past 3 days',
     items
   });
   
-  const outputPath = join(outputDir, 'rss.xml');
+  const outputPath = join(outputDir, 'rss', 'all.xml');
+  const rssDir = join(outputDir, 'rss');
+  if (!existsSync(rssDir)) {
+    mkdirSync(rssDir, { recursive: true });
+  }
   writeFileSync(outputPath, xml, 'utf-8');
   
   console.log(`   ✅ Written to: ${outputPath}`);
-  console.log(`   📊 ${items.length} publications`);
+  console.log(`   📊 ${items.length} articles`);
 }
 
 /**
- * Generate daily publications feed
+ * Generate updates RSS feed (recently updated articles)
  */
-async function generateDailyFeed(outputDir: string, limit?: number): Promise<void> {
-  console.log('\n📅 Generating daily publications feed...');
+async function generateUpdatesFeed(outputDir: string, limit?: number): Promise<void> {
+  console.log('\n� Generating updates RSS feed...');
   
   const rssDir = join(outputDir, 'rss');
   if (!existsSync(rssDir)) {
     mkdirSync(rssDir, { recursive: true });
   }
   
-  const publications = getPublications(limit, 'daily');
-  console.log(`   Found ${publications.length} daily publications`);
+  const articles = getUpdatedArticles(limit || 10);
+  console.log(`   Found ${articles.length} updated articles`);
   
   const items: RSSItem[] = [];
   
-  for (const pub of publications) {
-    const articles = getPublicationArticlesWithCategories(pub.id);
-    const categories = Array.from(
-      new Set(articles.flatMap(a => a.categories))
-    );
-    
+  for (const article of articles) {
     items.push({
-      title: pub.headline,
-      link: `${BASE_URL}/publications/${pub.slug}`,
-      guid: `${BASE_URL}/publications/${pub.slug}`,
-      pubDate: new Date(pub.pub_date).toUTCString(),
-      description: formatPublicationDescription(pub, articles),
-      categories: categories
+      title: `[UPDATED] ${article.headline}`,
+      link: `${BASE_URL}/articles/${article.slug}`,
+      guid: `${BASE_URL}/articles/${article.slug}`,
+      pubDate: new Date(article.pub_date).toUTCString(),
+      description: formatArticleDescription(article),
+      categories: article.categories
     });
   }
   
   const xml = generateRSSXML({
-    title: 'CyberNetSec - Daily Threat Intelligence',
+    title: 'Updates only',
     link: BASE_URL,
-    description: 'Daily cybersecurity threat briefings',
+    description: '20 Recently updated articles',
     items
   });
   
-  const outputPath = join(rssDir, 'daily.xml');
+  const outputPath = join(rssDir, 'updates.xml');
   writeFileSync(outputPath, xml, 'utf-8');
   
   console.log(`   ✅ Written to: ${outputPath}`);
-  console.log(`   📊 ${items.length} daily publications`);
+  console.log(`   📊 ${items.length} updated articles`);
+}
+
+/**
+ * Generate last day feed (NEW and UPDATE articles)
+ */
+async function generateLastDayFeed(outputDir: string, limit?: number): Promise<void> {
+  console.log('\n🕐 Generating last day RSS feed...');
+  
+  const rssDir = join(outputDir, 'rss');
+  if (!existsSync(rssDir)) {
+    mkdirSync(rssDir, { recursive: true });
+  }
+  
+  const articles = getLastDayArticles(limit);
+  console.log(`   Found ${articles.length} articles from last day`);
+  
+  const items: RSSItem[] = [];
+  
+  for (const article of articles) {
+    const prefix = article.isNew ? 'NEW:' : 'UPDATE:';
+    
+    items.push({
+      title: `${prefix} ${article.headline}`,
+      link: `${BASE_URL}/articles/${article.slug}`,
+      guid: `${BASE_URL}/articles/${article.slug}`,
+      pubDate: new Date(article.updated_at).toUTCString(),
+      description: formatEnhancedArticleDescription(article),
+      categories: article.categories
+    });
+  }
+  
+  const xml = generateRSSXML({
+    title: 'Last Day - NEW & UPDATE',
+    link: BASE_URL,
+    description: 'All NEW and UPDATE articles from the last day with enhanced metadata',
+    items
+  });
+  
+  const outputPath = join(rssDir, 'last.xml');
+  writeFileSync(outputPath, xml, 'utf-8');
+  
+  console.log(`   ✅ Written to: ${outputPath}`);
+  console.log(`   📊 ${items.length} articles (NEW + UPDATE)`);
 }
 
 /**
@@ -383,50 +796,41 @@ async function generateCategoryFeeds(outputDir: string, limit?: number): Promise
   console.log(`   Found ${categories.length} categories`);
   
   for (const category of categories) {
+    // Convert category to kebab-case slug (matches frontend expectations)
     const slug = category.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     
-    // Get publications that have articles in this category
-    const allPublications = getPublications(limit ? limit * 2 : undefined); // Get more to filter
-    const categoryItems: RSSItem[] = [];
+    // Get articles for this category (last 10 by updated_at)
+    const articles = getArticlesByCategory(category, limit || 10);
     
-    for (const pub of allPublications) {
-      const articles = getPublicationArticlesWithCategories(pub.id);
-      const hasCategory = articles.some(a => a.categories.includes(category));
-      
-      if (hasCategory) {
-        const categories = Array.from(
-          new Set(articles.flatMap(a => a.categories))
-        );
-        
-        categoryItems.push({
-          title: pub.headline,
-          link: `${BASE_URL}/publications/${pub.slug}`,
-          guid: `${BASE_URL}/publications/${pub.slug}`,
-          pubDate: new Date(pub.pub_date).toUTCString(),
-          description: formatPublicationDescription(pub, articles),
-          categories: categories
-        });
-        
-        if (limit && categoryItems.length >= limit) break;
-      }
+    if (articles.length === 0) {
+      console.log(`   ⏭️  Skipping ${category} (no articles in last 3 days)`);
+      continue;
     }
     
-    if (categoryItems.length === 0) {
-      console.log(`   ⏭️  Skipping ${category} (no publications)`);
-      continue;
+    const items: RSSItem[] = [];
+    
+    for (const article of articles) {
+      items.push({
+        title: article.headline,
+        link: `${BASE_URL}/articles/${article.slug}`,
+        guid: `${BASE_URL}/articles/${article.slug}`,
+        pubDate: new Date(article.pub_date).toUTCString(),
+        description: formatArticleDescription(article),
+        categories: article.categories
+      });
     }
     
     const xml = generateRSSXML({
       title: `CyberNetSec - ${category}`,
       link: BASE_URL,
-      description: `Latest ${category.toLowerCase()} threat intelligence`,
-      items: categoryItems
+      description: `Latest ${category.toLowerCase()} threat intelligence - the last 10 articles`,
+      items
     });
     
     const outputPath = join(categoriesDir, `${slug}.xml`);
     writeFileSync(outputPath, xml, 'utf-8');
     
-    console.log(`   ✅ ${slug}.xml (${categoryItems.length} items)`);
+    console.log(`   ✅ ${slug}.xml (${items.length} articles)`);
   }
 }
 
@@ -448,18 +852,25 @@ async function main() {
     // Generate main feed (all publications)
     await generateMainFeed(outputDir, limit);
     
-    // Generate daily feed
-    await generateDailyFeed(outputDir, limit);
+    // Generate updates feed (last 20 updated articles)
+    await generateUpdatesFeed(outputDir, limit || 20);
+    
+    // Generate last day feed (NEW and UPDATE articles)
+    await generateLastDayFeed(outputDir, limit);
     
     // Generate category feeds (limit to 30 if limit is specified)
     await generateCategoryFeeds(outputDir, limit ? Math.min(limit, 30) : undefined);
+    
+    // Generate metadata file
+    await generateMetadataFile(outputDir);
     
     console.log('\n' + '='.repeat(60));
     console.log('✅ Step 9 Complete!');
     console.log('='.repeat(60));
     console.log(`RSS feeds written to: ${outputDir}/`);
-    console.log(`Main feed: ${outputDir}/rss.xml`);
-    console.log(`Daily feed: ${outputDir}/rss/daily.xml`);
+    console.log(`Main feed: ${outputDir}/rss/all.xml`);
+    console.log(`Updates feed: ${outputDir}/rss/updates.xml`);
+    console.log(`Last day feed: ${outputDir}/rss/last.xml`);
     console.log(`Category feeds: ${outputDir}/rss/categories/`);
   } catch (error) {
     console.error('❌ Error generating RSS feeds:', error);

@@ -380,6 +380,8 @@ const props = withDefaults(defineProps<Props>(), {
     },
   ],
   legalLinks: () => [
+    { label: 'Contact Us', href: '/contact-us' },
+    { label: 'Editorial Policy', href: '/editorial-policy' },
     { label: 'Privacy Policy', href: '/privacy-policy' },
     { label: 'Terms of Service', href: '/terms-of-service' },
     { label: 'Disclaimer', href: '/disclaimer' },
@@ -402,6 +404,9 @@ const quickLinks = computed<QuickLink[]>(() => {
   
   return [
     { label: 'Home', to: '/' },
+    { label: 'About Us', to: '/about-us' },
+    { label: 'Contact Us', to: '/contact-us' },
+    { label: 'Editorial Policy', to: '/editorial-policy' },
     { label: 'Advisories', to: articlesLink.value },
     { label: 'Publications', to: '/publications' },
   ];

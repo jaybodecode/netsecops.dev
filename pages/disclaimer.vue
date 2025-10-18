@@ -9,12 +9,14 @@
 
     <!-- Layout -->
     <NuxtLayout name="cyber">
+      <!-- Header -->
+      <CyberHeader 
+        title="Disclaimer"
+        subtitle="Important limitations and disclaimers regarding cybersecurity information and services"
+        :showHomeButton="true"
+      />
+
       <div class="container mx-auto px-4 py-12 max-w-4xl">
-        <!-- Header -->
-        <CyberHeader 
-          title="Disclaimer"
-          subtitle="Important limitations and disclaimers regarding cybersecurity information and services"
-        />
 
         <!-- Content -->
         <div class="mt-12 prose prose-invert prose-purple max-w-none">

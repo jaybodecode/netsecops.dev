@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { marked } from 'marked'
+import { getAuthor } from '~/utils/authors'
 
 // Configure marked to open all links in new window
 const renderer = new marked.Renderer()
@@ -17,6 +18,15 @@ const articleSlug = route.params.slug as string
 
 // Fetch article data with transformation using slug
 const { data: article, pending, error } = await useArticleBySlug(articleSlug)
+
+// Get article author (use article's author if available, otherwise default)
+const articleAuthor = computed(() => {
+  if (article.value?.author) {
+    return article.value.author
+  }
+  // Return default CyberNetSec.io team author
+  return getAuthor()
+})
 
 // SEO: Article schema (NewsArticle JSON-LD)
 useArticleSeo(article.value)
@@ -1388,7 +1398,100 @@ definePageMeta({
           contentType="article" 
         />
 
-        <!-- Article Navigation (Previous/Next) -->
+        <!-- Author Byline -->
+        <div v-if="articleAuthor" class="mb-8">
+          <div class="bg-gray-900/50 rounded-lg border border-cyan-500/20 p-6">
+            <div class="flex items-start gap-4">
+              <!-- Author Avatar -->
+              <div v-if="articleAuthor.avatar" class="flex-shrink-0">
+                <img 
+                  :src="articleAuthor.avatar" 
+                  :alt="articleAuthor.name"
+                  class="w-16 h-16 rounded-full border-2 border-cyan-500/30"
+                />
+              </div>
+              <div v-else class="flex-shrink-0 w-16 h-16 rounded-full bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center border-2 border-cyan-500/30">
+                <Icon name="heroicons:user-circle-20-solid" class="w-10 h-10 text-white" />
+              </div>
+              
+              <!-- Author Info -->
+              <div class="flex-1 min-w-0">
+                <div class="flex items-baseline gap-2 mb-1">
+                  <h3 class="text-lg font-semibold text-cyan-400">{{ articleAuthor.name }}</h3>
+                  <span v-if="articleAuthor.role" class="text-sm text-gray-400">• {{ articleAuthor.role }}</span>
+                </div>
+                
+                <p v-if="articleAuthor.bio" class="text-gray-300 text-sm leading-relaxed mb-3">
+                  {{ articleAuthor.bio }}
+                </p>
+                
+                <!-- Expertise Tags -->
+                <div v-if="articleAuthor.expertise && articleAuthor.expertise.length > 0" class="flex flex-wrap gap-2 mb-3">
+                  <span 
+                    v-for="skill in articleAuthor.expertise" 
+                    :key="skill"
+                    class="px-2 py-1 bg-gray-800/50 border border-cyan-500/30 rounded text-xs text-cyan-400"
+                  >
+                    {{ skill }}
+                  </span>
+                </div>
+                
+                <!-- Social Links -->
+                <div v-if="articleAuthor.social || articleAuthor.email" class="flex items-center gap-3 text-sm">
+                  <a 
+                    v-if="articleAuthor.email" 
+                    :href="`mailto:${articleAuthor.email}`"
+                    class="text-cyan-400 hover:text-cyan-300 transition-colors flex items-center gap-1"
+                    title="Contact via email"
+                  >
+                    <Icon name="heroicons:envelope-20-solid" class="w-4 h-4" />
+                  </a>
+                  <a 
+                    v-if="articleAuthor.social?.twitter" 
+                    :href="`https://twitter.com/${articleAuthor.social.twitter}`"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-cyan-400 hover:text-cyan-300 transition-colors flex items-center gap-1"
+                    title="Follow on Twitter"
+                  >
+                    <Icon name="mdi:twitter" class="w-4 h-4" />
+                  </a>
+                  <a 
+                    v-if="articleAuthor.social?.linkedin" 
+                    :href="articleAuthor.social.linkedin"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-cyan-400 hover:text-cyan-300 transition-colors flex items-center gap-1"
+                    title="Connect on LinkedIn"
+                  >
+                    <Icon name="mdi:linkedin" class="w-4 h-4" />
+                  </a>
+                  <a 
+                    v-if="articleAuthor.social?.github" 
+                    :href="`https://github.com/${articleAuthor.social.github}`"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-cyan-400 hover:text-cyan-300 transition-colors flex items-center gap-1"
+                    title="View on GitHub"
+                  >
+                    <Icon name="mdi:github" class="w-4 h-4" />
+                  </a>
+                  <a 
+                    v-if="articleAuthor.social?.website" 
+                    :href="articleAuthor.social.website"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-cyan-400 hover:text-cyan-300 transition-colors flex items-center gap-1"
+                    title="Visit website"
+                  >
+                    <Icon name="heroicons:globe-alt-20-solid" class="w-4 h-4" />
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div v-if="previousArticle || nextArticle" class="border-t-2 border-gray-800 pt-8 mt-8 mb-8">
           <div class="bg-gray-900 border-2 border-cyan-500/30 rounded-lg p-6 shadow-[0_0_15px_rgba(34,211,238,0.15)]">
             <h3 class="text-lg font-semibold mb-4 text-center text-cyan-400">Continue Reading</h3>

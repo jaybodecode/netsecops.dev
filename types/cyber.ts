@@ -369,18 +369,23 @@ export interface DisplayMetadata {
 
 // ===== Author =====
 
+/**
+ * Author information for article bylines and attribution
+ * Used to establish trust signals and provide author credentials
+ */
 export interface Author {
-  id: string
-  name: string
-  email?: string
-  avatar?: string
-  bio?: string
-  role?: string
+  id: string                         // Unique author identifier (e.g., "cybernetsec-team")
+  name: string                       // Full name
+  email?: string                     // Contact email
+  avatar?: string                    // Avatar URL or path
+  bio?: string                       // Short biography (2-4 sentences about expertise and background)
+  role?: string                      // Job title or role (e.g., "Security Analyst", "Threat Intelligence Researcher")
+  expertise?: string[]               // Areas of expertise (e.g., ["Malware Analysis", "Incident Response"])
   social?: {
-    twitter?: string                 // @handle
-    linkedin?: string                // Profile URL
-    github?: string                  // Username
-    website?: string
+    twitter?: string                 // Twitter @handle
+    linkedin?: string                // LinkedIn profile URL
+    github?: string                  // GitHub username
+    website?: string                 // Personal or professional website
   }
 }
 
@@ -696,6 +701,9 @@ export interface CyberArticle {
   
   // Industry & Geographic Scope
   impact_scope?: ImpactScope         // Optional impact scope data
+  
+  // Author & Byline
+  author?: Author                    // Article author information for byline
   
   // Metadata
   article_type: 'NewsArticle' | 'TechArticle' | 'Report' | 'Analysis' | 'Advisory' | 'Unknown'
