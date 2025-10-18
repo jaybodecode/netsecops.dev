@@ -12,7 +12,7 @@
       <!-- Header -->
       <CyberHeader 
         title="Disclaimer"
-        subtitle="Important limitations and disclaimers regarding cybersecurity information and services"
+        subtitle="Important limitations and disclaimers"
         :showHomeButton="true"
       />
 
@@ -30,7 +30,7 @@
                   <h2 class="text-2xl font-bold text-red-400 m-0">⚠️ CRITICAL CYBERSECURITY DISCLAIMER</h2>
                 </div>
                 <p class="text-gray-300 text-lg font-semibold leading-relaxed m-0">
-                  The cybersecurity information, threat intelligence, vulnerability data, and security recommendations provided on CyberNetSec.io are for educational and informational purposes only. This information should not be considered as professional cybersecurity advice, and users assume full responsibility for its implementation and use.
+                  The cybersecurity information, threat intelligence, vulnerability data, and security recommendations provided on CyberNetSec.io are for educational and informational purposes only. This information should be considered as general information, and users assume full responsibility for its implementation and use.
                 </p>
               </div>
             </section>

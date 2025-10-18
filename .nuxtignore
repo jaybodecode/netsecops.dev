@@ -21,6 +21,7 @@ scripts/
 # Development files
 .DS_Store
 brands.txt
+.creds/
 
 # Logs and temp files
 logs/

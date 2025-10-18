@@ -1438,24 +1438,13 @@ definePageMeta({
                 
                 <!-- Social Links -->
                 <div v-if="articleAuthor.social || articleAuthor.email" class="flex items-center gap-3 text-sm">
-                  <a 
-                    v-if="articleAuthor.email" 
-                    :href="`mailto:${articleAuthor.email}`"
-                    class="text-cyan-400 hover:text-cyan-300 transition-colors flex items-center gap-1"
-                    title="Contact via email"
+                  <div 
+                    v-if="articleAuthor.email"
+                    class="text-cyan-400 flex items-center gap-1"
                   >
-                    <Icon name="heroicons:envelope-20-solid" class="w-4 h-4" />
-                  </a>
-                  <a 
-                    v-if="articleAuthor.social?.twitter" 
-                    :href="`https://twitter.com/${articleAuthor.social.twitter}`"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="text-cyan-400 hover:text-cyan-300 transition-colors flex items-center gap-1"
-                    title="Follow on Twitter"
-                  >
-                    <Icon name="mdi:twitter" class="w-4 h-4" />
-                  </a>
+                    <Icon name="heroicons:envelope-20-solid" class="w-4 h-4 mr-2" />
+                    <span class="text-cyan-400">cyber</span><span class="text-gray-400">&#64;</span><span class="text-cyan-400">sharefront.net</span>
+                  </div>
                   <a 
                     v-if="articleAuthor.social?.linkedin" 
                     :href="articleAuthor.social.linkedin"
@@ -1465,26 +1454,6 @@ definePageMeta({
                     title="Connect on LinkedIn"
                   >
                     <Icon name="mdi:linkedin" class="w-4 h-4" />
-                  </a>
-                  <a 
-                    v-if="articleAuthor.social?.github" 
-                    :href="`https://github.com/${articleAuthor.social.github}`"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="text-cyan-400 hover:text-cyan-300 transition-colors flex items-center gap-1"
-                    title="View on GitHub"
-                  >
-                    <Icon name="mdi:github" class="w-4 h-4" />
-                  </a>
-                  <a 
-                    v-if="articleAuthor.social?.website" 
-                    :href="articleAuthor.social.website"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="text-cyan-400 hover:text-cyan-300 transition-colors flex items-center gap-1"
-                    title="Visit website"
-                  >
-                    <Icon name="heroicons:globe-alt-20-solid" class="w-4 h-4" />
                   </a>
                 </div>
               </div>

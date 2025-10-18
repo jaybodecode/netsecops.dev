@@ -39,3 +39,4 @@ public/data/
 
 # Sensitive files
 brands.txt
+.creds/

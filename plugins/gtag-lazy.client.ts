@@ -13,11 +13,6 @@ declare global {
 export default defineNuxtPlugin(() => {
   const config = useRuntimeConfig()
 
-  // Only run in production
-  if (process.env.NODE_ENV !== 'production') {
-    return
-  }
-
   const gtmId = config.public.gtmId as string
   if (!gtmId) {
     return
@@ -38,13 +33,23 @@ export default defineNuxtPlugin(() => {
     script.src = `https://www.googletagmanager.com/gtm.js?id=${actualGtmId}`
 
     script.onload = () => {
-    //  console.log('GTM container loaded lazily ✓')
+      console.log('✅ GTM container loaded lazily')
+      console.log('📊 GTM ID:', actualGtmId)
+      console.log('🌐 Current URL:', window.location.href)
     }
 
     document.head.appendChild(script)
 
     // Initialize dataLayer
     window.dataLayer = window.dataLayer || []
+    console.log('📦 dataLayer initialized:', window.dataLayer)
+
+    // Monitor dataLayer pushes for debugging
+    const originalPush = window.dataLayer.push
+    window.dataLayer.push = function(...args) {
+      console.log('🔔 dataLayer.push:', args)
+      return originalPush.apply(window.dataLayer, args)
+    }
 
     // Add noscript fallback (required for GTM)
     const noscript = document.createElement('noscript')

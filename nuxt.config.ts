@@ -121,40 +121,10 @@ export default defineNuxtConfig({
           '/images/',
           '/sitemap.xml',
           '/favicon.ico',
+          '/',            // Allow everything not explicitly disallowed
         ],
       },
-      // Specific rules for Google
-      {
-        userAgent: ['Googlebot', 'Googlebot-Image'],
-        disallow: ['/_nuxt/', '/__sitemap__/', '/api/'],
-      },
-      // Specific rules for Bing
-      {
-        userAgent: ['Bingbot'],
-        disallow: ['/_nuxt/', '/__sitemap__/', '/api/'],
-      },
-      // Allow AI search bots that cite sources and send traffic
-      {
-        userAgent: [
-          'GPTBot',           // OpenAI ChatGPT (cites sources)
-          'ChatGPT-User',     // OpenAI user agent
-          'PerplexityBot',    // Perplexity AI (always cites sources)
-          'Claude-Web',       // Anthropic Claude web search
-          'anthropic-ai',     // Anthropic general crawler
-        ],
-        disallow: ['/_nuxt/', '/__sitemap__/', '/api/', '/_ipx/'],
-        allow: ['/articles/', '/publications/', '/'],
-      },
-      // Allow SEO tools - you use these for analytics
-      {
-        userAgent: [
-          'SemrushBot',       // Semrush/SEranking
-          'AhrefsBot',        // Ahrefs
-          'MJ12bot',          // Majestic SEO
-        ],
-        disallow: ['/_nuxt/', '/__sitemap__/', '/api/', '/_ipx/'],
-        allow: ['/articles/', '/publications/', '/'],
-      },
+      // All good bots (Google, Bing, AI bots, SEO tools) use the default rules above (User-agent: *)
       // Block pure training/scraping bots (no traffic benefit)
       {
         userAgent: [

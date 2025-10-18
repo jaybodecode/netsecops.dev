@@ -5,7 +5,9 @@
   "scripts": {
     "build": "nuxt build",
     "dev": "PORT=3000 nuxt dev",
-    "generate": "nuxt generate",
+    "pregenerate": "[ -d .output/public/.git ] && cp -r .output/public/.git /tmp/netsecops-git-backup || true",
+    "generate": "nuxt generate && cp -r github-pages-config/* github-pages-config/.nojekyll .output/public/",
+    "postgenerate": "[ -d /tmp/netsecops-git-backup ] && cp -r /tmp/netsecops-git-backup .output/public/.git && rm -rf /tmp/netsecops-git-backup || true",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "lint": "eslint .",

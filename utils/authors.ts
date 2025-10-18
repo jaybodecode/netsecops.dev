@@ -11,7 +11,7 @@ import type { Author } from '~/types/cyber'
 export const JASON_GOMES_AUTHOR: Author = {
   id: 'jason-gomes',
   name: 'Jason Gomes',
-  role: 'Founder & Lead Cybersecurity Analyst',
+  role: 'CybeNetSec.io Founder &  Cybersecurity Practitioner',
   bio: 'Cybersecurity professional with over 5 years of specialized experience in security operations, threat intelligence, incident response, and security automation. Expertise spans SOAR/XSOAR orchestration, threat intelligence platforms, SIEM/UEBA analytics, and cyber fusion center operations. Background includes technical enablement, solution architecture for enterprise and government clients, and implementing security automation workflows across IR, TIP, and SOC use cases.',
   avatar: '/images/bio-images/JasonGomes.jpeg',
   expertise: [

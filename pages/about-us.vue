@@ -297,7 +297,7 @@
                   <!-- Founder Info -->
                   <div class="flex-1 min-w-0">
                     <h3 class="text-xl font-semibold text-cyan-400 mb-1">Jason Gomes</h3>
-                    <p class="text-purple-400 text-sm mb-3">Founder & Lead Cybersecurity Analyst</p>
+                    <p class="text-purple-400 text-sm mb-3">CybeNetSec.io Founder &  Cybersecurity Practitioner</p>
                     
                     <div class="flex items-center gap-3 mb-4">
                       <div class="text-cyan-400 flex items-center gap-1 text-sm">

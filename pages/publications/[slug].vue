@@ -228,6 +228,7 @@
                   <NuxtImg
                     :src="getArticleImageUrl(article.categories)"
                     :alt="article.headline"
+                    preset="categoryBg"
                     loading="lazy"
                     class="w-full h-full object-cover opacity-60"
                     style="mask: linear-gradient(to right, transparent 0%, black 12%); -webkit-mask: linear-gradient(to right, transparent 0%, black 12%);"
