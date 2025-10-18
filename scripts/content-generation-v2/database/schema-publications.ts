@@ -179,6 +179,10 @@ export function hasPublication(pubDate: string): boolean {
 export function deletePublication(id: string): number {
   const db = getDB();
   
+  // Delete child records first to avoid FK constraint violations
+  db.prepare('DELETE FROM publication_articles WHERE publication_id = ?').run(id);
+  db.prepare('DELETE FROM published_articles WHERE publication_id = ?').run(id);
+  
   const stmt = db.prepare(`
     DELETE FROM publications
     WHERE id = ?

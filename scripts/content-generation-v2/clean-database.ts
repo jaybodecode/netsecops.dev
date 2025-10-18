@@ -4,9 +4,11 @@
  * Clean Database - Remove generated data with flexible cleanup options
  * 
  * Usage:
- *   npx tsx clean-database.ts                    # Default: Keep raw_search, api_calls, structured_news
- *   npx tsx clean-database.ts --delete-all       # Delete EVERYTHING including raw search data
- *   npx tsx clean-database.ts --date 2025-10-08  # Delete only data for specific date
+ *   npx tsx clean-database.ts                         # Default: Keep raw_search, api_calls, structured_news
+ *   npx tsx clean-database.ts --clear-step2           # Also delete structured_news (Step 2)
+ *   npx tsx clean-database.ts --delete-all            # Delete EVERYTHING including raw search data
+ *   npx tsx clean-database.ts --date 2025-10-08       # Delete only data for specific date
+ *   npx tsx clean-database.ts --force                 # Skip confirmation prompt
  * 
  * DEFAULT MODE (RECOMMENDED) PRESERVES:
  * - raw_search (Step 1 data)
@@ -19,6 +21,11 @@
  * - published_articles (Step 5 linking table)
  * - publication_articles (Step 5 linking table)
  * - pipeline_execution_log
+ * 
+ * --clear-step2 MODE:
+ * - Same as default but also deletes structured_news
+ * - Preserves raw_search and api_calls
+ * - Use when you want to regenerate Step 2 output with new logic
  * 
  * --delete-all MODE (NUCLEAR OPTION):
  * - Deletes EVERYTHING except api_calls
@@ -34,6 +41,7 @@ import Database from 'better-sqlite3'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 import * as readline from 'readline'
+import { Command } from 'commander'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -41,15 +49,26 @@ const rootDir = join(__dirname, '../..')
 
 const DB_PATH = join(rootDir, 'logs/content-generation-v2.db')
 
-// Parse command line args
-const args = process.argv.slice(2)
-const deleteAll = args.includes('--delete-all')
-const dateArg = args.find(arg => arg.startsWith('--date='))
-const targetDate = dateArg ? dateArg.split('=')[1] : null
+// Parse command line args with Commander
+const program = new Command()
+program
+  .name('clean-database')
+  .description('Clean database with flexible cleanup options')
+  .option('--delete-all', 'Delete EVERYTHING including raw search data (preserves api_calls only)')
+  .option('--clear-step2', 'Also delete structured_news (Step 2 data)')
+  .option('--date <date>', 'Delete only data for specific date (YYYY-MM-DD)')
+  .option('--force', 'Skip confirmation prompt')
+  .parse(process.argv)
+
+const options = program.opts()
+const deleteAll = options.deleteAll || false
+const clearStep2 = options.clearStep2 || false
+const targetDate = options.date || null
+const force = options.force || false
 
 // Validate date format if provided
 if (targetDate && !/^\d{4}-\d{2}-\d{2}$/.test(targetDate)) {
-  console.error('❌ Error: Invalid date format. Use --date=YYYY-MM-DD')
+  console.error('❌ Error: Invalid date format. Use --date YYYY-MM-DD')
   process.exit(1)
 }
 
@@ -63,6 +82,21 @@ function getTableCounts(db: Database.Database): TableStats[] {
     'raw_search',
     'structured_news', 
     'articles',
+    'article_cves',
+    'article_cyber_observables',
+    'article_d3fend_countermeasures',
+    'article_entities',
+    'article_events',
+    'article_impact_scope',
+    'article_iocs',
+    'article_mitre_techniques',
+    'article_mitre_mitigations',
+    'article_resolutions',
+    'article_sources',
+    'article_tags',
+    'article_update_sources',
+    'article_updates',
+    'articles_meta',
     'publications',
     'published_articles',
     'publication_articles',
@@ -88,6 +122,8 @@ function main() {
     console.log('\n🔧 Mode: DELETE ALL (Nuclear Option - deletes raw_search & structured_news)')
   } else if (targetDate) {
     console.log(`\n🔧 Mode: Delete Single Date (${targetDate})`)
+  } else if (clearStep2) {
+    console.log('\n🔧 Mode: Clear Step 2+ (preserves raw_search, api_calls)')
   } else {
     console.log('\n🔧 Mode: Standard Cleanup (preserves raw_search, structured_news, api_calls)')
   }
@@ -99,17 +135,26 @@ function main() {
   // Show current state
   console.log('\n📊 CURRENT DATABASE STATE:\n')
   const beforeStats = getTableCounts(db)
+  
+  // Define which tables to preserve based on mode
+  const preservedTables = new Set<string>()
+  
+  if (deleteAll) {
+    preservedTables.add('api_calls')
+  } else if (clearStep2) {
+    preservedTables.add('raw_search')
+    preservedTables.add('api_calls')
+  } else {
+    preservedTables.add('raw_search')
+    preservedTables.add('structured_news')
+    preservedTables.add('api_calls')
+  }
+  
   beforeStats.forEach(stat => {
-    let preserve = ['raw_search', 'api_calls', 'structured_news'].includes(stat.name)
-    if (deleteAll && stat.name !== 'api_calls') {
-      preserve = false
-    }
-    if (targetDate) {
-      preserve = ['raw_search', 'api_calls', 'structured_news'].includes(stat.name)
-    }
+    const preserve = preservedTables.has(stat.name)
     const emoji = preserve ? '✅' : '🗑️ '
     const label = preserve ? '(PRESERVE)' : targetDate ? `(CLEAR ${targetDate})` : '(CLEAR)'
-    console.log(`   ${emoji} ${stat.name.padEnd(25)} ${stat.count.toString().padStart(6)} rows ${label}`)
+    console.log(`   ${emoji} ${stat.name.padEnd(35)} ${stat.count.toString().padStart(6)} rows ${label}`)
   })
   
   console.log('\n' + '='.repeat(60))
@@ -120,11 +165,21 @@ function main() {
   } else if (targetDate) {
     console.log('   Preserved: raw_search, structured_news, api_calls')
     console.log(`   Cleared: Articles and publications for ${targetDate} only`)
+  } else if (clearStep2) {
+    console.log('   Preserved: raw_search, api_calls')
+    console.log('   Cleared: structured_news, articles, publications, pipeline_execution_log')
   } else {
     console.log('   Preserved: raw_search, structured_news, api_calls')
     console.log('   Cleared: articles, publications, pipeline_execution_log')
   }
   console.log('')
+  
+  // Skip confirmation if --force flag is set
+  if (force) {
+    console.log('⚡ Force mode: Skipping confirmation\n')
+    performCleanup(db)
+    return
+  }
   
   // Confirmation prompt
   const rl = readline.createInterface({
@@ -141,6 +196,12 @@ function main() {
     }
     
     console.log('\n🧹 Starting cleanup...\n')
+    performCleanup(db)
+    rl.close()
+  })
+}
+
+function performCleanup(db: Database.Database) {
     
     // Begin transaction
     const transaction = db.transaction(() => {
@@ -163,37 +224,49 @@ function main() {
         
         // Delete related data
         console.log('   Clearing article_cves...')
-        db.prepare(`DELETE FROM article_cves WHERE article_id IN (${placeholders})`).run(...articleIds)
+        try { db.prepare(`DELETE FROM article_cves WHERE article_id IN (${placeholders})`).run(...articleIds) } catch (e) {}
+        
+        console.log('   Clearing article_cyber_observables...')
+        try { db.prepare(`DELETE FROM article_cyber_observables WHERE article_id IN (${placeholders})`).run(...articleIds) } catch (e) {}
+        
+        console.log('   Clearing article_d3fend_countermeasures...')
+        try { db.prepare(`DELETE FROM article_d3fend_countermeasures WHERE article_id IN (${placeholders})`).run(...articleIds) } catch (e) {}
         
         console.log('   Clearing article_entities...')
-        db.prepare(`DELETE FROM article_entities WHERE article_id IN (${placeholders})`).run(...articleIds)
+        try { db.prepare(`DELETE FROM article_entities WHERE article_id IN (${placeholders})`).run(...articleIds) } catch (e) {}
         
         console.log('   Clearing article_tags...')
-        db.prepare(`DELETE FROM article_tags WHERE article_id IN (${placeholders})`).run(...articleIds)
+        try { db.prepare(`DELETE FROM article_tags WHERE article_id IN (${placeholders})`).run(...articleIds) } catch (e) {}
         
         console.log('   Clearing article_sources...')
-        db.prepare(`DELETE FROM article_sources WHERE article_id IN (${placeholders})`).run(...articleIds)
+        try { db.prepare(`DELETE FROM article_sources WHERE article_id IN (${placeholders})`).run(...articleIds) } catch (e) {}
         
         console.log('   Clearing article_events...')
-        db.prepare(`DELETE FROM article_events WHERE article_id IN (${placeholders})`).run(...articleIds)
+        try { db.prepare(`DELETE FROM article_events WHERE article_id IN (${placeholders})`).run(...articleIds) } catch (e) {}
+        
+        console.log('   Clearing article_iocs...')
+        try { db.prepare(`DELETE FROM article_iocs WHERE article_id IN (${placeholders})`).run(...articleIds) } catch (e) {}
         
         console.log('   Clearing article_mitre_techniques...')
-        db.prepare(`DELETE FROM article_mitre_techniques WHERE article_id IN (${placeholders})`).run(...articleIds)
+        try { db.prepare(`DELETE FROM article_mitre_techniques WHERE article_id IN (${placeholders})`).run(...articleIds) } catch (e) {}
+        
+        console.log('   Clearing article_mitre_mitigations...')
+        try { db.prepare(`DELETE FROM article_mitre_mitigations WHERE article_id IN (${placeholders})`).run(...articleIds) } catch (e) {}
         
         console.log('   Clearing article_impact_scope...')
-        db.prepare(`DELETE FROM article_impact_scope WHERE article_id IN (${placeholders})`).run(...articleIds)
+        try { db.prepare(`DELETE FROM article_impact_scope WHERE article_id IN (${placeholders})`).run(...articleIds) } catch (e) {}
         
         console.log('   Clearing article_updates...')
-        db.prepare(`DELETE FROM article_updates WHERE article_id IN (${placeholders})`).run(...articleIds)
+        try { db.prepare(`DELETE FROM article_updates WHERE article_id IN (${placeholders})`).run(...articleIds) } catch (e) {}
         
         console.log('   Clearing article_update_sources...')
-        db.prepare(`DELETE FROM article_update_sources WHERE article_id IN (${placeholders})`).run(...articleIds)
+        try { db.prepare(`DELETE FROM article_update_sources WHERE article_id IN (${placeholders})`).run(...articleIds) } catch (e) {}
         
         console.log('   Clearing article_resolutions...')
-        db.prepare(`DELETE FROM article_resolutions WHERE article_id IN (${placeholders})`).run(...articleIds)
+        try { db.prepare(`DELETE FROM article_resolutions WHERE article_id IN (${placeholders})`).run(...articleIds) } catch (e) {}
         
         console.log('   Clearing articles_meta...')
-        db.prepare(`DELETE FROM articles_meta WHERE article_id IN (${placeholders})`).run(...articleIds)
+        try { db.prepare(`DELETE FROM articles_meta WHERE article_id IN (${placeholders})`).run(...articleIds) } catch (e) {}
         
         console.log('   Clearing articles...')
         db.prepare(`DELETE FROM articles WHERE id IN (${placeholders})`).run(...articleIds)
@@ -220,6 +293,12 @@ function main() {
         console.log('   Clearing article_cves...')
         try { db.prepare('DELETE FROM article_cves').run() } catch (e) {}
         
+        console.log('   Clearing article_cyber_observables...')
+        try { db.prepare('DELETE FROM article_cyber_observables').run() } catch (e) {}
+        
+        console.log('   Clearing article_d3fend_countermeasures...')
+        try { db.prepare('DELETE FROM article_d3fend_countermeasures').run() } catch (e) {}
+        
         console.log('   Clearing article_entities...')
         try { db.prepare('DELETE FROM article_entities').run() } catch (e) {}
         
@@ -232,8 +311,14 @@ function main() {
         console.log('   Clearing article_events...')
         try { db.prepare('DELETE FROM article_events').run() } catch (e) {}
         
+        console.log('   Clearing article_iocs...')
+        try { db.prepare('DELETE FROM article_iocs').run() } catch (e) {}
+        
         console.log('   Clearing article_mitre_techniques...')
         try { db.prepare('DELETE FROM article_mitre_techniques').run() } catch (e) {}
+        
+        console.log('   Clearing article_mitre_mitigations...')
+        try { db.prepare('DELETE FROM article_mitre_mitigations').run() } catch (e) {}
         
         console.log('   Clearing article_impact_scope...')
         try { db.prepare('DELETE FROM article_impact_scope').run() } catch (e) {}
@@ -259,13 +344,16 @@ function main() {
         db.prepare('DELETE FROM articles').run()
         db.prepare('DELETE FROM articles_fts').run()
         
-        // Clear structured_news and raw_search only if --delete-all
+        // Clear structured_news and raw_search based on mode
         if (deleteAll) {
           console.log('   Clearing structured_news...')
           db.prepare('DELETE FROM structured_news').run()
           
           console.log('   Clearing raw_search...')
           db.prepare('DELETE FROM raw_search').run()
+        } else if (clearStep2) {
+          console.log('   Clearing structured_news...')
+          db.prepare('DELETE FROM structured_news').run()
         }
       }
     })
@@ -295,6 +383,11 @@ function main() {
         console.log('   1. Run Step 1: npx tsx scripts/content-generation-v2/search-news.ts --date 2025-10-15')
         console.log('   2. Run Step 2: npx tsx scripts/content-generation-v2/news-structured.ts --date 2025-10-15 --logtodb')
         console.log('   3. Continue with Steps 3-7\n')
+      } else if (clearStep2) {
+        console.log('   Start from Step 2:')
+        console.log('   1. Run Step 2: npx tsx scripts/content-generation-v2/news-structured.ts --date 2025-10-15 --logtodb')
+        console.log('   2. Run Step 3: npx tsx scripts/content-generation-v2/insert-articles.ts --date 2025-10-15')
+        console.log('   3. Continue with Steps 4-7\n')
       } else {
         console.log('   Process day-by-day starting with oldest date:')
         console.log('   1. Run Step 3: npx tsx scripts/content-generation-v2/insert-articles.ts --date 2025-10-07')
@@ -307,10 +400,8 @@ function main() {
       console.error('\n❌ Error during cleanup:', error)
       throw error
     } finally {
-      rl.close()
       db.close()
     }
-  })
 }
 
 main()

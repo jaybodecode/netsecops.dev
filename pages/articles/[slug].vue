@@ -1,6 +1,15 @@
 <script setup lang="ts">
 import { marked } from 'marked'
 
+// Configure marked to open all links in new window
+const renderer = new marked.Renderer()
+const originalLink = renderer.link.bind(renderer)
+renderer.link = function(token: any) {
+  const html = originalLink(token)
+  return html.replace(/^<a /, '<a target="_blank" rel="noopener noreferrer" ')
+}
+marked.setOptions({ renderer })
+
 // Get route parameter
 const route = useRoute()
 const router = useRouter()
@@ -41,6 +50,12 @@ const navigateToArticle = (slug: string | undefined) => {
   nextTick(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   })
+}
+
+// Navigate to article without scrolling (pagination behavior)
+const navigateToArticleNoScroll = (slug: string | undefined) => {
+  if (!slug) return
+  router.push(`/articles/${slug}`)
 }
 
 // Mark article as read in localStorage (client-side only)
@@ -197,6 +212,13 @@ const exportMarkdown = () => {
   document.body.removeChild(a)
   URL.revokeObjectURL(url)
 }
+
+// Impact Scope expand/collapse state
+const expandedSections = ref({
+  companies: false,
+  industries: false,
+  countries: false
+})
 
 // CVE helper functions
 const getCveId = (cve: string | { id: string; cvss_score?: number; severity?: string }) => {
@@ -400,17 +422,6 @@ definePageMeta({
                 {{ article.severity.toUpperCase() }}
               </CyberBadge>
 
-              <CyberBadge 
-                v-if="article.updates && article.updates.length > 0"
-                variant="warning"
-                size="md"
-                class="font-semibold animate-pulse"
-                title="This article has been updated"
-              >
-                <Icon name="heroicons:arrow-path-20-solid" class="w-4 h-4 mr-1" />
-                UPDATED
-              </CyberBadge>
-
               <!-- Date and Reading Time -->
               <div class="flex items-center gap-3 text-sm text-cyan-400/80">
                 <div class="flex items-center gap-1">
@@ -418,7 +429,7 @@ definePageMeta({
                   <span>{{ formatDate(article.pub_date) }}</span>
                 </div>
                 <div v-if="article.updates && article.updates.length > 0" class="flex items-center gap-1 text-yellow-400/90 font-semibold">
-                  <Icon name="heroicons:arrow-path-20-solid" class="w-4 h-4" />
+                  <Icon name="heroicons:arrow-path-20-solid" class="w-4 h-4 animate-spin" />
                   <span>{{ formatDate(article.updates[article.updates.length - 1]?.datetime || article.pub_date) }}</span>
                 </div>
                 <div class="flex items-center gap-1">
@@ -442,78 +453,6 @@ definePageMeta({
             </div>
           </div>
         </div>
-      </div>
-
-      <!-- Impact Scope (from new schema) - TOP OF PAGE -->
-      <div v-if="article.impact_scope && ((article.impact_scope.companies_affected && article.impact_scope.companies_affected.length > 0) || article.impact_scope.people_affected_estimate)" class="container mx-auto px-4 max-w-4xl mb-8">
-        <CyberCard variant="warning">
-          <div class="p-6">
-            <h3 class="text-xl font-semibold mb-4 flex items-center text-orange-400">
-              <Icon name="heroicons:exclamation-triangle-20-solid" class="w-6 h-6 mr-2" />
-              Impact Scope
-            </h3>
-            
-            <div class="space-y-4">
-              <!-- People Affected Estimate -->
-              <div v-if="article.impact_scope.people_affected_estimate">
-                <h4 class="text-sm font-semibold text-gray-400 mb-2">People Affected</h4>
-                <div class="bg-gray-900/50 border border-orange-500/30 rounded-lg p-3">
-                  <p class="text-gray-300 text-lg font-semibold">
-                    {{ article.impact_scope.people_affected_estimate }}
-                  </p>
-                </div>
-              </div>
-
-              <!-- Companies Affected -->
-              <div v-if="article.impact_scope.companies_affected && article.impact_scope.companies_affected.length > 0">
-                <h4 class="text-sm font-semibold text-gray-400 mb-2">Affected Companies</h4>
-                <div class="flex flex-wrap gap-2">
-                  <CyberBadge 
-                    v-for="company in article.impact_scope.companies_affected" 
-                    :key="company"
-                    variant="warning"
-                    size="md"
-                  >
-                    {{ company }}
-                  </CyberBadge>
-                </div>
-              </div>
-
-              <!-- Industries Affected -->
-              <div v-if="article.impact_scope.industries_affected && article.impact_scope.industries_affected.length > 0">
-                <h4 class="text-sm font-semibold text-gray-400 mb-2">Industries Affected</h4>
-                <div class="flex flex-wrap gap-2">
-                  <CyberBadge 
-                    v-for="industry in article.impact_scope.industries_affected" 
-                    :key="industry"
-                    variant="warning"
-                    size="sm"
-                  >
-                    {{ industry }}
-                  </CyberBadge>
-                </div>
-              </div>
-
-              <!-- Geographic Scope -->
-              <div v-if="article.impact_scope.countries_affected && article.impact_scope.countries_affected.length > 0">
-                <h4 class="text-sm font-semibold text-gray-400 mb-2">Geographic Impact</h4>
-                <div class="flex items-center gap-2 flex-wrap">
-                  <CyberBadge 
-                    v-for="country in article.impact_scope.countries_affected" 
-                    :key="country"
-                    variant="warning"
-                    size="sm"
-                  >
-                    {{ country }}
-                  </CyberBadge>
-                  <span v-if="article.impact_scope.geographic_scope" class="text-xs text-gray-400 capitalize">
-                    ({{ article.impact_scope.geographic_scope }})
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </CyberCard>
       </div>
 
       <!-- Article Content -->
@@ -540,6 +479,99 @@ definePageMeta({
           </CyberCard>
         </div>
 
+        <!-- Impact Scope (from new schema) -->
+        <div v-if="article.impact_scope && ((article.impact_scope.companies_affected && article.impact_scope.companies_affected.length > 0) || article.impact_scope.people_affected_estimate)" class="mb-8">
+          <CyberCard variant="warning">
+            <div class="p-6">
+              <h3 class="text-xl font-semibold mb-4 flex items-center text-orange-400">
+                <Icon name="heroicons:exclamation-triangle-20-solid" class="w-6 h-6 mr-2" />
+                Impact Scope
+              </h3>
+              
+              <div class="space-y-4">
+                <!-- People Affected Estimate -->
+                <div v-if="article.impact_scope.people_affected_estimate">
+                  <h4 class="text-sm font-semibold text-gray-400 mb-2">People Affected</h4>
+                  <div class="bg-gray-900/50 border border-orange-500/30 rounded-lg p-3">
+                    <p class="text-gray-300 text-lg font-semibold">
+                      {{ article.impact_scope.people_affected_estimate }}
+                    </p>
+                  </div>
+                </div>
+
+                <!-- Companies Affected -->
+                <div v-if="article.impact_scope.companies_affected && article.impact_scope.companies_affected.length > 0">
+                  <h4 class="text-sm font-semibold text-gray-400 mb-2">Affected Companies</h4>
+                  <div class="flex flex-wrap gap-2">
+                    <CyberBadge 
+                      v-for="company in (expandedSections.companies ? article.impact_scope.companies_affected : article.impact_scope.companies_affected.slice(0, 10))" 
+                      :key="company"
+                      variant="warning"
+                      size="md"
+                    >
+                      {{ company }}
+                    </CyberBadge>
+                    <button
+                      v-if="article.impact_scope.companies_affected.length > 10"
+                      @click="expandedSections.companies = !expandedSections.companies"
+                      class="px-3 py-1 rounded bg-gray-700/50 border border-gray-600/50 text-gray-400 hover:text-gray-300 hover:border-gray-500 text-sm font-semibold transition-all"
+                    >
+                      {{ expandedSections.companies ? 'Show less' : `+${article.impact_scope.companies_affected.length - 10} more` }}
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Industries Affected -->
+                <div v-if="article.impact_scope.industries_affected && article.impact_scope.industries_affected.length > 0">
+                  <h4 class="text-sm font-semibold text-gray-400 mb-2">Industries Affected</h4>
+                  <div class="flex flex-wrap gap-2">
+                    <CyberBadge 
+                      v-for="industry in (expandedSections.industries ? article.impact_scope.industries_affected : article.impact_scope.industries_affected.slice(0, 10))" 
+                      :key="industry"
+                      variant="warning"
+                      size="sm"
+                    >
+                      {{ industry }}
+                    </CyberBadge>
+                    <button
+                      v-if="article.impact_scope.industries_affected.length > 10"
+                      @click="expandedSections.industries = !expandedSections.industries"
+                      class="px-3 py-1 rounded bg-gray-700/50 border border-gray-600/50 text-gray-400 hover:text-gray-300 hover:border-gray-500 text-sm font-semibold transition-all"
+                    >
+                      {{ expandedSections.industries ? 'Show less' : `+${article.impact_scope.industries_affected.length - 10} more` }}
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Geographic Scope -->
+                <div v-if="article.impact_scope.countries_affected && article.impact_scope.countries_affected.length > 0">
+                  <h4 class="text-sm font-semibold text-gray-400 mb-2">Geographic Impact</h4>
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <CyberBadge 
+                      v-for="country in (expandedSections.countries ? article.impact_scope.countries_affected : article.impact_scope.countries_affected.slice(0, 10))" 
+                      :key="country"
+                      variant="warning"
+                      size="sm"
+                    >
+                      {{ country }}
+                    </CyberBadge>
+                    <button
+                      v-if="article.impact_scope.countries_affected.length > 10"
+                      @click="expandedSections.countries = !expandedSections.countries"
+                      class="px-3 py-1 rounded bg-gray-700/50 border border-gray-600/50 text-gray-400 hover:text-gray-300 hover:border-gray-500 text-sm font-semibold transition-all"
+                    >
+                      {{ expandedSections.countries ? 'Show less' : `+${article.impact_scope.countries_affected.length - 10} more` }}
+                    </button>
+                    <span v-if="article.impact_scope.geographic_scope" class="text-xs text-gray-400 capitalize">
+                      ({{ article.impact_scope.geographic_scope }})
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CyberCard>
+        </div>
+
         <!-- Related Entities (Full Width Row) -->
         <div v-if="article.entities && article.entities.length > 0" class="mb-8 no-print">
           <CyberCard variant="purple">
@@ -558,14 +590,24 @@ definePageMeta({
                       Threat Actors
                     </h4>
                     <div class="flex flex-wrap gap-1">
-                      <CyberBadge
-                        v-for="entity in article.entities.filter(e => e.type === 'threat_actor')"
-                        :key="entity.name"
-                        variant="danger"
-                        size="sm"
-                      >
-                        {{ entity.name }}
-                      </CyberBadge>
+                      <template v-for="entity in article.entities.filter(e => e.type === 'threat_actor')" :key="entity.name">
+                        <a 
+                          v-if="entity.url"
+                          :href="entity.url" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          class="inline-block hover:opacity-80 transition-opacity"
+                          :title="`Learn more about ${entity.name}`"
+                        >
+                          <CyberBadge variant="danger" size="sm" class="flex items-center gap-1">
+                            {{ entity.name }}
+                            <Icon name="heroicons:arrow-top-right-on-square-20-solid" class="w-3 h-3 flex-shrink-0" />
+                          </CyberBadge>
+                        </a>
+                        <CyberBadge v-else variant="danger" size="sm">
+                          {{ entity.name }}
+                        </CyberBadge>
+                      </template>
                     </div>
                   </div>
 
@@ -576,14 +618,24 @@ definePageMeta({
                       Organizations
                     </h4>
                     <div class="flex flex-wrap gap-1">
-                      <CyberBadge
-                        v-for="entity in article.entities.filter(e => ['vendor', 'security_organization', 'government_agency'].includes(e.type))"
-                        :key="entity.name"
-                        variant="info"
-                        size="sm"
-                      >
-                        {{ entity.name }}
-                      </CyberBadge>
+                      <template v-for="entity in article.entities.filter(e => ['vendor', 'security_organization', 'government_agency'].includes(e.type))" :key="entity.name">
+                        <a 
+                          v-if="entity.url"
+                          :href="entity.url" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          class="inline-block hover:opacity-80 transition-opacity"
+                          :title="`Learn more about ${entity.name}`"
+                        >
+                          <CyberBadge variant="info" size="sm" class="flex items-center gap-1">
+                            {{ entity.name }}
+                            <Icon name="heroicons:arrow-top-right-on-square-20-solid" class="w-3 h-3 flex-shrink-0" />
+                          </CyberBadge>
+                        </a>
+                        <CyberBadge v-else variant="info" size="sm">
+                          {{ entity.name }}
+                        </CyberBadge>
+                      </template>
                     </div>
                   </div>
 
@@ -594,14 +646,24 @@ definePageMeta({
                       Products & Tech
                     </h4>
                     <div class="flex flex-wrap gap-1">
-                      <CyberBadge
-                        v-for="entity in article.entities.filter(e => ['product', 'technology', 'tool'].includes(e.type))"
-                        :key="entity.name"
-                        variant="cyan"
-                        size="sm"
-                      >
-                        {{ entity.name }}
-                      </CyberBadge>
+                      <template v-for="entity in article.entities.filter(e => ['product', 'technology', 'tool'].includes(e.type))" :key="entity.name">
+                        <a 
+                          v-if="entity.url"
+                          :href="entity.url" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          class="inline-block hover:opacity-80 transition-opacity"
+                          :title="`Learn more about ${entity.name}`"
+                        >
+                          <CyberBadge variant="cyan" size="sm" class="flex items-center gap-1">
+                            {{ entity.name }}
+                            <Icon name="heroicons:arrow-top-right-on-square-20-solid" class="w-3 h-3 flex-shrink-0" />
+                          </CyberBadge>
+                        </a>
+                        <CyberBadge v-else variant="cyan" size="sm">
+                          {{ entity.name }}
+                        </CyberBadge>
+                      </template>
                     </div>
                   </div>
 
@@ -612,14 +674,24 @@ definePageMeta({
                       Other
                     </h4>
                     <div class="flex flex-wrap gap-1">
-                      <CyberBadge
-                        v-for="entity in article.entities.filter(e => !['threat_actor', 'vendor', 'security_organization', 'government_agency', 'product', 'technology', 'tool'].includes(e.type))"
-                        :key="entity.name"
-                        variant="secondary"
-                        size="sm"
-                      >
-                        {{ entity.name }}
-                      </CyberBadge>
+                      <template v-for="entity in article.entities.filter(e => !['threat_actor', 'vendor', 'security_organization', 'government_agency', 'product', 'technology', 'tool'].includes(e.type))" :key="entity.name">
+                        <a 
+                          v-if="entity.url"
+                          :href="entity.url" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          class="inline-block hover:opacity-80 transition-opacity"
+                          :title="`Learn more about ${entity.name}`"
+                        >
+                          <CyberBadge variant="secondary" size="sm" class="flex items-center gap-1">
+                            {{ entity.name }}
+                            <Icon name="heroicons:arrow-top-right-on-square-20-solid" class="w-3 h-3 flex-shrink-0" />
+                          </CyberBadge>
+                        </a>
+                        <CyberBadge v-else variant="secondary" size="sm">
+                          {{ entity.name }}
+                        </CyberBadge>
+                      </template>
                     </div>
                   </div>
                 </div>
@@ -1060,7 +1132,7 @@ definePageMeta({
             <div class="p-6">
               <h3 class="text-xl font-semibold mb-4 flex items-center text-blue-400">
                 <Icon name="heroicons:shield-check-20-solid" class="w-6 h-6 mr-2" />
-                MITRE ATT&CK Framework
+                MITRE ATT&CK Techniques
               </h3>
               
               <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -1164,6 +1236,101 @@ definePageMeta({
           </CyberCard>
         </div>
 
+        <!-- MITRE ATT&CK Mitigations (NEW) -->
+        <div v-if="article.mitre_mitigations && article.mitre_mitigations.length > 0" class="mb-8 no-print">
+          <CyberCard variant="purple">
+            <div class="p-6">
+              <h3 class="text-xl font-semibold mb-4 flex items-center text-purple-400">
+                <Icon name="heroicons:shield-check-20-solid" class="w-6 h-6 mr-2" />
+                MITRE ATT&CK Mitigations
+              </h3>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div 
+                  v-for="mitigation in article.mitre_mitigations" 
+                  :key="mitigation.id"
+                  class="bg-gray-900/50 border border-purple-500/30 rounded-lg p-4 hover:border-purple-500/50 transition-all"
+                >
+                  <!-- Mitigation Header -->
+                  <div class="flex items-start justify-between gap-2 mb-3">
+                    <div class="flex-1">
+                      <a 
+                        :href="`https://attack.mitre.org/mitigations/${mitigation.id}/`"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="inline-flex items-center gap-2 group"
+                      >
+                        <h4 class="text-base font-semibold text-purple-400 group-hover:text-purple-300 transition-colors">
+                          {{ mitigation.name }}
+                        </h4>
+                        <Icon name="heroicons:arrow-top-right-on-square-20-solid" class="w-4 h-4 text-purple-400 opacity-60 group-hover:opacity-100" />
+                      </a>
+                      
+                      <!-- Mitigation ID and Domain -->
+                      <div class="flex items-center gap-2 mt-1">
+                        <a 
+                          :href="`https://attack.mitre.org/mitigations/${mitigation.id}/`"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <CyberBadge 
+                            variant="purple"
+                            size="sm"
+                            class="font-mono hover:opacity-80 transition-opacity"
+                          >
+                            {{ mitigation.id }}
+                          </CyberBadge>
+                        </a>
+                        <CyberBadge 
+                          v-if="mitigation.domain"
+                          variant="info"
+                          size="sm"
+                          class="capitalize"
+                        >
+                          {{ mitigation.domain }}
+                        </CyberBadge>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Description -->
+                  <p v-if="mitigation.description" class="text-sm text-gray-300 mb-3">
+                    {{ mitigation.description }}
+                  </p>
+                  
+                  <!-- D3FEND Techniques Mapping -->
+                  <div v-if="mitigation.d3fend_techniques && mitigation.d3fend_techniques.length > 0" class="mt-3 pt-3 border-t border-purple-500/20">
+                    <p class="text-xs font-semibold text-purple-400 mb-2 flex items-center">
+                      <Icon name="heroicons:link-20-solid" class="w-3 h-3 mr-1" />
+                      Mapped D3FEND Techniques:
+                    </p>
+                    <div class="flex flex-wrap gap-2">
+                      <a 
+                        v-for="d3fend in mitigation.d3fend_techniques" 
+                        :key="d3fend.id"
+                        :href="d3fend.url"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="inline-flex items-center gap-1 px-2 py-1 rounded bg-green-500/10 border border-green-500/30 text-green-400 hover:border-green-500 text-xs transition-all group"
+                        :title="d3fend.name"
+                      >
+                        <span class="font-mono font-semibold">{{ d3fend.id }}</span>
+                        <Icon name="heroicons:arrow-top-right-on-square-20-solid" class="w-3 h-3 opacity-60 group-hover:opacity-100" />
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CyberCard>
+        </div>
+
+        <!-- D3FEND Defensive Countermeasures (NEW Widget) -->
+        <D3FENDRecommendations 
+          v-if="article.d3fend_countermeasures && article.d3fend_countermeasures.length > 0"
+          :countermeasures="article.d3fend_countermeasures"
+        />
+
         <!-- Sources & References (from new schema) -->
         <div v-if="article.sources && article.sources.length > 0" class="mb-8">
           <CyberCard variant="info">
@@ -1187,9 +1354,19 @@ definePageMeta({
                     {{ source.title }}
                     <Icon name="heroicons:arrow-top-right-on-square-20-solid" class="w-4 h-4 flex-shrink-0" />
                   </a>
-                  <div class="text-sm text-gray-400 mt-1 flex items-center gap-2 flex-wrap">
-                    <span>{{ source.website || source.root_url || extractDomain(source.url) }}</span>
-                    <span v-if="source.date" class="flex items-center gap-1">
+                  <div class="text-sm mt-1 flex items-center gap-2 flex-wrap">
+                    <!-- Brand name prominent -->
+                    <span class="text-blue-300 font-medium">
+                      {{ source.friendly_name || extractDomain(source.url) }}
+                    </span>
+                    
+                    <!-- Domain as secondary info if friendly_name exists -->
+                    <span v-if="source.friendly_name && source.website" class="text-gray-500 text-xs">
+                      ({{ source.website }})
+                    </span>
+                    
+                    <!-- Date -->
+                    <span v-if="source.date" class="flex items-center gap-1 text-gray-400">
                       <span>•</span>
                       <Icon name="heroicons:calendar-20-solid" class="w-3 h-3" />
                       <span>{{ formatDate(source.date) }}</span>
@@ -1218,7 +1395,7 @@ definePageMeta({
               <NuxtLink
                 v-if="previousArticle"
                 :to="`/articles/${previousArticle.slug}`"
-                @click.prevent="navigateToArticle(previousArticle.slug)"
+                @click.prevent="navigateToArticleNoScroll(previousArticle.slug)"
                 class="inline-flex items-center justify-center gap-2 px-4 py-2 
                        bg-gray-800/50 hover:bg-cyan-500/10 
                        border border-cyan-500/30 hover:border-cyan-400/50
@@ -1242,11 +1419,24 @@ definePageMeta({
                 All
               </NuxtLink>
               
+              <!-- Back to Top Button -->
+              <button
+                @click="scrollToTop"
+                class="inline-flex items-center justify-center gap-2 px-4 py-2 
+                       bg-cyan-500/20 hover:bg-cyan-500/30 
+                       border border-cyan-500/50 hover:border-cyan-400/70
+                       rounded-lg font-medium text-sm text-gray-100
+                       transition-all duration-200 cursor-pointer"
+              >
+                <Icon name="heroicons:arrow-up-20-solid" class="w-4 h-4" />
+                Top
+              </button>
+              
               <!-- Next Article -->
               <NuxtLink
                 v-if="nextArticle"
                 :to="`/articles/${nextArticle.slug}`"
-                @click.prevent="navigateToArticle(nextArticle.slug)"
+                @click.prevent="navigateToArticleNoScroll(nextArticle.slug)"
                 class="inline-flex items-center justify-center gap-2 px-4 py-2 
                        bg-gray-800/50 hover:bg-cyan-500/10 
                        border border-cyan-500/30 hover:border-cyan-400/50
@@ -1344,6 +1534,32 @@ definePageMeta({
 
 .cyber-prose :deep(a) {
   @apply text-cyan-400 hover:text-cyan-300 hover:underline transition-colors;
+}
+
+/* External link icon using Heroicons arrow-top-right-on-square */
+.cyber-prose :deep(a[href^="http"])::after,
+.cyber-prose :deep(a[href^="https"])::after {
+  content: "";
+  display: inline-block;
+  width: 0.875em;
+  height: 0.875em;
+  margin-left: 0.25em;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%2322d3ee'%3E%3Cpath fill-rule='evenodd' d='M4.25 5.5a.75.75 0 00-.75.75v8.5c0 .414.336.75.75.75h8.5a.75.75 0 00.75-.75v-4a.75.75 0 011.5 0v4A2.25 2.25 0 0112.75 17h-8.5A2.25 2.25 0 012 14.75v-8.5A2.25 2.25 0 014.25 4h5a.75.75 0 010 1.5h-5z' clip-rule='evenodd'/%3E%3Cpath fill-rule='evenodd' d='M6.194 12.753a.75.75 0 001.06.053L16.5 4.44v2.81a.75.75 0 001.5 0v-4.5a.75.75 0 00-.75-.75h-4.5a.75.75 0 000 1.5h2.553l-9.056 8.194a.75.75 0 00-.053 1.06z' clip-rule='evenodd'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  opacity: 0.6;
+  vertical-align: text-top;
+}
+
+.cyber-prose :deep(a[href^="http"]):hover::after,
+.cyber-prose :deep(a[href^="https"]):hover::after {
+  opacity: 1;
+}
+
+/* Remove icon from MITRE links in code blocks */
+.cyber-prose :deep(code a[href^="http"])::after,
+.cyber-prose :deep(code a[href^="https"])::after {
+  content: none;
 }
 
 .cyber-prose :deep(code) {

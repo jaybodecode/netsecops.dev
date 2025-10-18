@@ -102,6 +102,37 @@ interface StructuredArticle {
     name: string;
     tactic: string;
   }>;
+  mitre_mitigations?: Array<{
+    id: string;
+    name: string;
+    domain?: string;
+    description?: string;
+    d3fend_techniques?: Array<{
+      id: string;
+      name: string;
+      url: string;
+    }>;
+  }>;
+  d3fend_countermeasures?: Array<{
+    technique_id: string;
+    technique_name: string;
+    url: string;
+    recommendation: string;
+    mitre_mitigation_id?: string;
+  }>;
+  iocs?: Array<{
+    type: string;
+    value: string;
+    description?: string;
+    source?: string;
+  }>;
+  cyber_observables?: Array<{
+    type: string;
+    value: string;
+    description: string;
+    context: string;
+    confidence: string;
+  }>;
   tags: string[];
   extract_datetime: string;
   article_type?: string;
@@ -341,6 +372,10 @@ async function generateArticleJson(
     sources: structuredArticle?.sources,
     events: structuredArticle?.events,
     mitre_techniques: structuredArticle?.mitre_techniques,
+    mitre_mitigations: structuredArticle?.mitre_mitigations,
+    d3fend_countermeasures: structuredArticle?.d3fend_countermeasures,
+    iocs: structuredArticle?.iocs,
+    cyber_observables: structuredArticle?.cyber_observables,
     tags: structuredArticle?.tags || [],
     extract_datetime: structuredArticle?.extract_datetime || createdAt,  // Use createdAt fallback
     article_type: structuredArticle?.article_type,

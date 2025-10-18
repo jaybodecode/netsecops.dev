@@ -199,6 +199,7 @@ function rebuildSchema() {
       article_id TEXT NOT NULL,
       entity_name TEXT NOT NULL,
       entity_type TEXT NOT NULL,
+      entity_url TEXT,
       PRIMARY KEY (article_id, entity_name, entity_type)
     )
   `);

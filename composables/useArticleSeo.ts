@@ -39,12 +39,40 @@ export function useArticleSeo(article: CyberArticle | null | undefined) {
     ? new Date(article.updatedAt).toISOString()
     : publishedDate
 
+  // Build enhanced keywords from multiple sources (SEARCH-FRIENDLY ONLY)
+  const keywordArray = [
+    // 1. Original editorial keywords
+    ...(article.keywords || []),
+    
+    // 2. Entity names (threat actors, malware, companies, products)
+    ...(article.entities?.map(e => e.name) || []),
+    
+    // 3. CVE identifiers (high search volume)
+    ...(article.cves?.map(cve => typeof cve === 'string' ? cve : cve.id) || []),
+    
+    // 4. Source brand names (enables "Unit 42 malware" searches)
+    ...(article.sources?.map(s => s.friendly_name).filter(Boolean) || []),
+    
+    // 5. Industries & countries
+    ...(article.impact_scope?.industries_affected || []),
+    ...(article.impact_scope?.countries_affected || []),
+    
+    // 6. Category & severity
+    article.category?.[0],
+    article.severity,
+  ].filter(Boolean)
+
+  // Deduplicate and cap at 40 keywords to avoid keyword stuffing
+  const enhancedKeywords = [...new Set(keywordArray)]
+    .slice(0, 40)
+    .join(', ')
+
   // Set all meta tags
   useSeoMeta({
     // Basic meta
     title: `${article.headline} | CyberNetSec.io`,
     description: article.meta_description,
-    keywords: article.keywords?.join(', ') || '',
+    keywords: enhancedKeywords,
     author: 'CyberNetSec.io',
     robots: 'index, follow, max-image-preview:large',
 
@@ -112,7 +140,7 @@ export function useArticleSeo(article: CyberArticle | null | undefined) {
           },
           description: article.meta_description,
           articleSection: article.category?.[0] || 'Cybersecurity',
-          keywords: article.keywords?.join(', ') || '',
+          keywords: enhancedKeywords,
           mainEntityOfPage: {
             '@type': 'WebPage',
             '@id': canonicalUrl,

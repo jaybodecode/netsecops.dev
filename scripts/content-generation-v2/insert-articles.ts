@@ -11,6 +11,7 @@
  * Usage:
  *   npx tsx scripts/content-generation-v2/insert-articles.ts --date 2025-10-07
  *   npx tsx scripts/content-generation-v2/insert-articles.ts --date 2025-10-07 --dry-run
+ *   npx tsx scripts/content-generation-v2/insert-articles.ts --date 2025-10-07 --json-file tmp/news-structured_2025-10-16_*.json
  */
 
 import Database from 'better-sqlite3';
@@ -52,6 +53,7 @@ console.log('🚀 Insert Articles - Phase 2');
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 console.log(`   Date: ${targetDate}`);
 console.log(`   Mode: ${isDryRun ? '🔍 DRY RUN (no changes)' : '✍️  WRITE'}\n`);
+
 
 // Open database
 const db = new Database(DB_PATH);
@@ -194,12 +196,12 @@ function insertArticleEntities(articleId: string, entities: ArticleType['entitie
   
   const stmt = db.prepare(`
     INSERT INTO article_entities (
-      article_id, entity_name, entity_type
-    ) VALUES (?, ?, ?)
+      article_id, entity_name, entity_type, entity_url
+    ) VALUES (?, ?, ?, ?)
   `);
   
   for (const entity of entities) {
-    stmt.run(articleId, entity.name, entity.type);
+    stmt.run(articleId, entity.name, entity.type, entity.url || null);
   }
 }
 
@@ -228,8 +230,8 @@ function insertArticleSources(articleId: string, sources: ArticleType['sources']
   
   const stmt = db.prepare(`
     INSERT INTO article_sources (
-      article_id, url, title, website, date
-    ) VALUES (?, ?, ?, ?, ?)
+      article_id, url, title, website, friendly_name, date
+    ) VALUES (?, ?, ?, ?, ?, ?)
   `);
   
   for (const source of sources) {
@@ -238,6 +240,7 @@ function insertArticleSources(articleId: string, sources: ArticleType['sources']
       source.url,
       source.title,
       source.website || null,
+      source.friendly_name || (source as any).name || null, // Support both friendly_name (new schema) and name (old JSON)
       source.date || null
     );
   }
@@ -308,6 +311,101 @@ function insertArticleImpactScope(articleId: string, impactScope: ArticleType['i
 }
 
 /**
+ * Insert IOCs for an article
+ */
+function insertArticleIOCs(articleId: string, iocs: ArticleType['iocs']) {
+  if (!iocs || iocs.length === 0) return;
+  
+  const stmt = db.prepare(`
+    INSERT INTO article_iocs (
+      article_id, type, value, description, source
+    ) VALUES (?, ?, ?, ?, ?)
+  `);
+  
+  for (const ioc of iocs) {
+    stmt.run(
+      articleId,
+      ioc.type,
+      ioc.value,
+      ioc.description || null,
+      ioc.source || null
+    );
+  }
+}
+
+/**
+ * Insert cyber observables for an article
+ */
+function insertArticleCyberObservables(articleId: string, observables: ArticleType['cyber_observables']) {
+  if (!observables || observables.length === 0) return;
+  
+  const stmt = db.prepare(`
+    INSERT INTO article_cyber_observables (
+      article_id, type, value, description, context, confidence
+    ) VALUES (?, ?, ?, ?, ?, ?)
+  `);
+  
+  for (const observable of observables) {
+    stmt.run(
+      articleId,
+      observable.type,
+      observable.value,
+      observable.description,
+      observable.context,
+      observable.confidence
+    );
+  }
+}
+
+/**
+ * Insert MITRE mitigations for an article
+ */
+function insertArticleMitreMitigations(articleId: string, mitigations: ArticleType['mitre_mitigations']) {
+  if (!mitigations || mitigations.length === 0) return;
+  
+  const stmt = db.prepare(`
+    INSERT INTO article_mitre_mitigations (
+      article_id, mitigation_id, name, domain, description, d3fend_techniques
+    ) VALUES (?, ?, ?, ?, ?, ?)
+  `);
+  
+  for (const mitigation of mitigations) {
+    stmt.run(
+      articleId,
+      mitigation.id,
+      mitigation.name,
+      mitigation.domain || null,
+      mitigation.description || null,
+      mitigation.d3fend_techniques ? JSON.stringify(mitigation.d3fend_techniques) : null
+    );
+  }
+}
+
+/**
+ * Insert D3FEND countermeasures for an article
+ */
+function insertArticleD3FENDCountermeasures(articleId: string, countermeasures: ArticleType['d3fend_countermeasures']) {
+  if (!countermeasures || countermeasures.length === 0) return;
+  
+  const stmt = db.prepare(`
+    INSERT INTO article_d3fend_countermeasures (
+      article_id, technique_id, technique_name, url, recommendation, mitre_mitigation_id
+    ) VALUES (?, ?, ?, ?, ?, ?)
+  `);
+  
+  for (const countermeasure of countermeasures) {
+    stmt.run(
+      articleId,
+      countermeasure.technique_id,
+      countermeasure.technique_name,
+      countermeasure.url,
+      countermeasure.recommendation,
+      countermeasure.mitre_mitigation_id || null
+    );
+  }
+}
+
+/**
  * Main execution
  */
 function main() {
@@ -355,7 +453,10 @@ function main() {
     console.log(`   - ${advisory.articles.reduce((sum, a) => sum + (a.tags?.length || 0), 0)} tags`);
     console.log(`   - ${advisory.articles.reduce((sum, a) => sum + (a.sources?.length || 0), 0)} sources`);
     console.log(`   - ${advisory.articles.reduce((sum, a) => sum + (a.events?.length || 0), 0)} events`);
-    console.log(`   - ${advisory.articles.reduce((sum, a) => sum + (a.mitre_techniques?.length || 0), 0)} MITRE techniques\n`);
+    console.log(`   - ${advisory.articles.reduce((sum, a) => sum + (a.mitre_techniques?.length || 0), 0)} MITRE ATT&CK techniques`);
+    console.log(`   - ${advisory.articles.reduce((sum, a) => sum + (a.iocs?.length || 0), 0)} IOCs`);
+    console.log(`   - ${advisory.articles.reduce((sum, a) => sum + (a.cyber_observables?.length || 0), 0)} cyber observables`);
+    console.log(`   - ${advisory.articles.reduce((sum, a) => sum + (a.d3fend_countermeasures?.length || 0), 0)} D3FEND countermeasures\n`);
     return;
   }
   
@@ -382,7 +483,11 @@ function main() {
         insertArticleSources(article.id, article.sources);
         insertArticleEvents(article.id, article.events);
         insertArticleMitreTechniques(article.id, article.mitre_techniques);
+        insertArticleMitreMitigations(article.id, article.mitre_mitigations);
         insertArticleImpactScope(article.id, article.impact_scope);
+        insertArticleIOCs(article.id, article.iocs);
+        insertArticleCyberObservables(article.id, article.cyber_observables);
+        insertArticleD3FENDCountermeasures(article.id, article.d3fend_countermeasures);
         
         insertedCount++;
         console.log(`   ✅ Inserted article ${insertedCount}/${advisory.articles.length}: ${article.slug}`);

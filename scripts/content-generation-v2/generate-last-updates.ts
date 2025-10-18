@@ -29,6 +29,7 @@ import { dirname } from 'path';
 interface CLIOptions {
   days: number;
   output: string;
+  date?: string;  // YYYY-MM-DD format, defaults to today
 }
 
 interface LastUpdatesOutput {
@@ -82,6 +83,7 @@ function parseArgs(): CLIOptions {
     .version('1.0.0')
     .option('-d, --days <number>', 'Include publications/updates from last N days', '1')
     .option('-o, --output <path>', 'Output file path', 'public/data/last-updates.json')
+    .option('--date <date>', 'Reference date (YYYY-MM-DD), defaults to today')
     .parse(process.argv);
   
   const options = program.opts();
@@ -89,10 +91,15 @@ function parseArgs(): CLIOptions {
   return {
     days: parseInt(options.days, 10),
     output: options.output,
+    date: options.date,
   };
 }
 
-function getLatestPublications(db: any, days: number): any[] {
+function getLatestPublications(db: any, days: number, referenceDate?: string): any[] {
+  const dateCondition = referenceDate 
+    ? `DATE(p.pub_date) >= DATE('${referenceDate}', '-' || ? || ' days')`
+    : `DATE(p.pub_date) >= DATE('now', '-' || ? || ' days')`;
+  
   const stmt = db.prepare(`
     SELECT 
       p.id as pub_id,
@@ -103,7 +110,7 @@ function getLatestPublications(db: any, days: number): any[] {
       p.article_count,
       p.created_at
     FROM publications p
-    WHERE DATE(p.pub_date) >= DATE('now', '-' || ? || ' days')
+    WHERE ${dateCondition}
     ORDER BY p.pub_date DESC
     LIMIT 5
   `);
@@ -166,7 +173,11 @@ function getPublicationArticles(db: any, pubDate: string): any[] {
   });
 }
 
-function getRecentlyUpdatedArticles(db: any, days: number): any[] {
+function getRecentlyUpdatedArticles(db: any, days: number, referenceDate?: string): any[] {
+  const dateCondition = referenceDate 
+    ? `DATE(a.updated_at) >= DATE('${referenceDate}', '-' || ? || ' days')`
+    : `DATE(a.updated_at) >= DATE('now', '-' || ? || ' days')`;
+  
   const stmt = db.prepare(`
     SELECT 
       a.id,
@@ -180,7 +191,7 @@ function getRecentlyUpdatedArticles(db: any, days: number): any[] {
     FROM articles a
     WHERE a.updated_at IS NOT NULL
       AND a.updated_at != a.created_at
-      AND DATE(a.updated_at) >= DATE('now', '-' || ? || ' days')
+      AND ${dateCondition}
     ORDER BY a.updated_at DESC
     LIMIT 20
   `);
@@ -233,11 +244,16 @@ function main() {
   
   console.log(`⚙️  Configuration:`);
   console.log(`   Lookback: ${options.days} days`);
+  if (options.date) {
+    console.log(`   Reference date: ${options.date}`);
+  } else {
+    console.log(`   Reference date: today`);
+  }
   console.log(`   Output: ${options.output}\n`);
   
   // Get latest publications
   console.log('📰 Fetching latest publications...');
-  const publications = getLatestPublications(db, options.days);
+  const publications = getLatestPublications(db, options.days, options.date);
   console.log(`   Found ${publications.length} publication(s)\n`);
   
   // Get articles for each publication
@@ -256,13 +272,14 @@ function main() {
   
   // Get recently updated articles
   console.log('\n🔄 Fetching recently updated articles...');
-  const updatedArticles = getRecentlyUpdatedArticles(db, options.days);
+  const updatedArticles = getRecentlyUpdatedArticles(db, options.days, options.date);
   console.log(`   Found ${updatedArticles.length} updated article(s)\n`);
   
   // Build output
+  const runDate = options.date || new Date().toISOString().split('T')[0]!;
   const output: LastUpdatesOutput = {
     lastUpdated: new Date().toISOString(),
-    runDate: new Date().toISOString().split('T')[0]!,
+    runDate,
     publications: publicationsWithArticles,
     articles: {
       updated: updatedArticles,

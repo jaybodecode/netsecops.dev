@@ -545,8 +545,8 @@ export interface ContentAnalytics {
  */
 export interface ArticleEntity {
   name: string
-  type: 'vendor' | 'threat_actor' | 'technology' | 'product' | 'government_agency' | 'company' | 'malware' | 'tool'
-  stix_type: 'identity' | 'threat-actor' | 'infrastructure' | 'tool' | 'malware'
+  type: 'vendor' | 'threat_actor' | 'technology' | 'product' | 'government_agency' | 'company' | 'malware' | 'tool' | 'security_organization' | 'other'
+  url?: string  // Optional URL reference for the entity (e.g., MITRE ATT&CK link, company website)
 }
 
 /**
@@ -561,11 +561,14 @@ export interface ArticleEvent {
  * Source reference for an article
  */
 export interface ArticleSource {
-  source_id: string
-  url: string
-  title: string
-  root_url: string
-  source_date?: string  // Format: MM/DD/YYYY
+  url: string                        // Full source URL
+  title: string                      // Article title from source
+  friendly_name?: string             // Friendly brand name (e.g., "Unit 42", "The Hacker News")
+  website?: string                   // Source domain (e.g., "bleepingcomputer.com") - for backward compatibility
+  date?: string                      // Publication date in ISO format (YYYY-MM-DD)
+  source_date?: string               // Legacy field - Format: MM/DD/YYYY (for backward compatibility)
+  source_id?: string                 // Optional source ID
+  root_url?: string                  // Optional root URL (for backward compatibility)
 }
 
 /**
@@ -686,7 +689,8 @@ export interface CyberArticle {
     name: string
     tactic: string
   }>
-  
+  mitre_mitigations?: MITREMitigation[]  // MITRE ATT&CK mitigations (NEW)
+  d3fend_countermeasures?: D3FENDCountermeasure[]  // D3FEND defensive countermeasures (NEW)
   // Sources & References
   sources: ArticleSource[]
   
@@ -759,6 +763,37 @@ export interface MITRETechnique {
 }
 
 /**
+ * D3FEND Technique (used within MITRE Mitigation)
+ */
+export interface D3FENDTechnique {
+  id: string                         // D3FEND Technique ID (e.g., D3-MFA, D3-NTA)
+  name: string                       // D3FEND Technique name (e.g., 'Multi-factor Authentication')
+  url: string                        // D3FEND URL
+}
+
+/**
+ * MITRE ATT&CK Mitigation
+ */
+export interface MITREMitigation {
+  id: string                         // MITRE Mitigation ID (e.g., M1047, M1032)
+  name: string                       // Mitigation name (e.g., 'Audit', 'Multi-factor Authentication')
+  domain?: 'enterprise' | 'ics' | 'mobile'  // MITRE domain
+  description?: string               // Optional description of how mitigation applies
+  d3fend_techniques?: D3FENDTechnique[]  // Optional mapped D3FEND techniques
+}
+
+/**
+ * D3FEND Countermeasure - Defensive technique with detailed recommendation
+ */
+export interface D3FENDCountermeasure {
+  technique_id: string               // D3FEND technique ID (e.g., D3-PH, D3-NTA)
+  technique_name: string             // D3FEND technique name
+  url: string                        // D3FEND technique URL
+  mitre_mitigation_id?: string       // Optional MITRE Mitigation ID mapping
+  recommendation: string             // Detailed tactical recommendation (200-400 words, Markdown)
+}
+
+/**
  * Entity mentioned in an article
  * Based on EntitySchema from publication-unified-zod.ts
  */
@@ -786,6 +821,9 @@ export interface CVE {
 export interface Source {
   url: string                        // Source URL
   title: string                      // Source title
+  friendly_name?: string             // Friendly brand/publication name (e.g., "The Hacker News", "Unit 42")
+  website?: string                   // Source domain (e.g., "bleepingcomputer.com") - backward compatibility
+  date?: string                      // Publication date (YYYY-MM-DD)
 }
 
 /**
@@ -829,7 +867,8 @@ export interface ArticleInPublication {
   sources: Source[]                  // Source references
   events: Event[]                    // Timeline events
   mitre_techniques: MITRETechnique[] // MITRE ATT&CK techniques
-  
+  mitre_mitigations?: MITREMitigation[]  // MITRE ATT&CK mitigations (NEW)
+  d3fend_countermeasures?: D3FENDCountermeasure[]  // D3FEND defensive countermeasures (NEW)
   // Impact & Tags
   impact_scope?: ImpactScope         // Impact scope data
   tags: string[]                     // Cybersecurity tags

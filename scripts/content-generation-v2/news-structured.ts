@@ -88,7 +88,8 @@ INSTRUCTIONS:
    - Extract all entities (companies, threat actors, malware, products, etc.)
    - List CVEs with details if mentioned
    - Include source URLs
-   - Map to MITRE ATT&CK techniques
+   - Identify MITRE ATT&CK techniques (T#### format) - extract from articles AND generate based on your knowledge
+   - Generate MITRE ATT&CK mitigations (M#### format) - use your expert knowledge to recommend defenses
    - Create chronological event timeline if applicable
    - Add impact scope details
    - Generate relevant tags
@@ -109,7 +110,9 @@ IMPORTANT:
 - Ensure Twitter posts are under 280 characters
 - List categories with most prominent FIRST
 - Include source URLs for all articles
-- Map threats to MITRE ATT&CK when possible
+- Identify MITRE ATT&CK techniques (T#### format): extract from articles AND generate based on attack TTPs
+- Generate MITRE ATT&CK mitigations (M#### format): use your expert knowledge to recommend appropriate defenses
+- Map mitigations to D3FEND techniques using the embedded lookup table in the schema
 - Format technical content (IPs, domains, file paths, CVEs) with inline code backticks
 - Use code blocks for any exploit code, detection rules, or configuration examples
 `;

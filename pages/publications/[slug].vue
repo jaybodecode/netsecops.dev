@@ -298,6 +298,15 @@
 
 <script setup lang="ts">
 import { marked } from 'marked';
+
+// Configure marked to open all links in new window
+const renderer = new marked.Renderer()
+const originalLink = renderer.link.bind(renderer)
+renderer.link = function(token: any) {
+  const html = originalLink(token)
+  return html.replace(/^<a /, '<a target="_blank" rel="noopener noreferrer" ')
+}
+marked.setOptions({ renderer })
 import { getArticleImageUrl } from '~/utils/images';
 import type { ArticleMetadata } from '~/composables/useArticles';
 

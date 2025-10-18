@@ -1,8 +1,18 @@
 # Content Generation V3 - Complete Pipeline Guide
 
 **Version**: 3.0  
-**Updated**: 2025-10-16  
+**Updated**: 2025-10-18  
 **Status**: Production Ready ✅
+
+---
+
+## 📚 Quick Links
+
+- **[RUN_README.md](RUN_README.md)** - Quick start guide for daily operations, database management, and inspection tips
+- **[LLM.md](LLM.md)** - LLM integration and cost tracking
+- **run-pipeline.sh** - Automated full pipeline script (Steps 1-10)
+
+**New to the pipeline?** Start with [RUN_README.md](RUN_README.md) for daily operations and common tasks.
 
 ---
 
@@ -964,6 +974,94 @@ xmllint --noout public/rss.xml && echo "✓ Valid RSS XML"
 # Count RSS items
 grep -c "<item>" public/rss.xml
 ```
+
+---
+
+## Automated Pipeline Execution
+
+### Full Pipeline Script
+
+**Script**: `run-pipeline.sh`
+
+**Purpose**: Automated execution of Steps 1-10 for a specific date, including static site generation and deployment.
+
+**Usage**:
+```bash
+# Run complete pipeline for specific date
+./scripts/content-generation-v2/run-pipeline.sh 2025-10-17
+
+# What it does:
+# 1. Search raw news (Step 1)
+# 2. Generate structured content (Step 2) 
+# 3. Insert articles (Step 3)
+# 4. Check duplicates (Step 4)
+# 5. Generate publication (Step 5)
+# 5.5. Regenerate updated articles (Step 5.5) - Safe to always run
+# 6. Export JSON (Step 6)
+# 7. Generate indexes & RSS (Step 7)
+# 8. Generate last updates (Step 8)
+# 9. Build static site (npm run generate)
+# 10. Deploy to GitHub Pages (deploy-to-pages.sh)
+```
+
+**Features**:
+- ✅ Error handling with detailed troubleshooting tips
+- ✅ Colored output for easy reading
+- ✅ Date validation (format and validity)
+- ✅ Step-by-step progress indicators
+- ✅ Final statistics showing resolution distribution
+- ✅ Automatic error recovery guidance
+
+**Error Handling**:
+```bash
+# If script fails, it shows:
+# - Exit code and line number
+# - Troubleshooting tips:
+#   1. Check error message above
+#   2. Verify database exists
+#   3. Check if previous steps completed
+#   4. Review logs in tmp/ directory
+```
+
+**Output Example**:
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📰 Content Generation V3 Pipeline
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📅 Processing date: 2025-10-17
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔍 Step 1: Searching raw news...
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Step 1 complete
+
+[... continues through all steps ...]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✨ Pipeline Complete!
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📊 Statistics for 2025-10-17:
+
+resolution  count
+----------  -----
+NEW         3
+SKIP-FTS5   2
+SKIP-UPDATE 1
+
+✅ All steps completed successfully for 2025-10-17
+```
+
+**When to use**:
+- Daily production runs
+- Full end-to-end pipeline execution
+- Automated deployments
+- Testing complete workflow after code changes
+
+**When NOT to use**:
+- Testing individual steps (use direct script calls)
+- Re-running specific steps (use step-specific scripts)
+- Debugging issues (run steps manually for detailed output)
 
 ---
 
